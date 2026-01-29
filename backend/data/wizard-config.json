@@ -115,6 +115,11 @@
       "id": "other",
       "name": "Other",
       "apiSupported": false
+    },
+    {
+      "id": "ukg-pro",
+      "name": "UKG Pro",
+      "apiSupported": true
     }
   ],
   "updateMethods": [
@@ -176,6 +181,12 @@
         "name": "None",
         "description": "No welcome gift",
         "value": 0
+      },
+      {
+        "id": "titanium-elite",
+        "name": "Titanium Elite",
+        "description": "Branded welcome kit",
+        "value": 1000
       }
     ]
   },

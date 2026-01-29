@@ -147,7 +147,7 @@ const ConciergeManagement = () => {
           {/* List */}
           <div className="space-y-4">
             <h2 className="text-2xl font-bold mb-6">Current Concierges ({concierges.length})</h2>
-            {concierges.map((concierge) => (
+              {[...concierges].sort((a, b) => a.name.localeCompare(b.name)).map((concierge) => (
               <div key={concierge.id} className="card">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">

@@ -125,7 +125,7 @@ const HRISManagement = () => {
 
             <div className="space-y-4">
               <h2 className="text-2xl font-bold mb-6">Current Systems ({systems.length})</h2>
-              {systems.map((system) => (
+              {[...systems].sort((a, b) => a.name.localeCompare(b.name)).map((system) => (
                 <div key={system.id} className="card flex justify-between items-center">
                   <div>
                     <h3 className="font-semibold">{system.name}</h3>
@@ -151,7 +151,7 @@ const HRISManagement = () => {
             <h2 className="text-2xl font-bold mb-6">Update Methods</h2>
             <p className="text-dark-400 text-sm mb-6">These are predefined and managed by the system.</p>
             <div className="space-y-4">
-              {methods.map((method) => (
+              {[...methods].sort((a, b) => a.name.localeCompare(b.name)).map((method) => (
                 <div key={method.id} className="p-4 bg-dark-800/50 rounded-lg">
                   <h3 className="font-semibold">{method.name}</h3>
                   <p className="text-sm text-dark-400 mt-1">{method.description}</p>

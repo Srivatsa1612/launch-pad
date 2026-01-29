@@ -166,7 +166,7 @@ const HardwareManagement = () => {
 
             <div className="space-y-4">
               <h2 className="text-2xl font-bold mb-6">Current Options ({hardware.deviceProcurement.length})</h2>
-              {hardware.deviceProcurement.map((device) => (
+              {[...hardware.deviceProcurement].sort((a, b) => a.name.localeCompare(b.name)).map((device) => (
                 <div key={device.id} className="card">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
@@ -234,7 +234,7 @@ const HardwareManagement = () => {
 
             <div className="space-y-4">
               <h2 className="text-2xl font-bold mb-6">Current Gifts ({hardware.welcomeGifts.length})</h2>
-              {hardware.welcomeGifts.map((gift) => (
+              {[...hardware.welcomeGifts].sort((a, b) => a.name.localeCompare(b.name)).map((gift) => (
                 <div key={gift.id} className="card">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">

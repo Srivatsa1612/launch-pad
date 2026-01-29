@@ -189,7 +189,7 @@ const InvitationsManagement = () => {
                 <p>No invitations created yet</p>
               </div>
             ) : (
-              invitations.map((invite) => {
+              [...invitations].sort((a, b) => a.companyName.localeCompare(b.companyName)).map((invite) => {
                 const inviteUrl = generateInvitationUrl(invite.code);
                 const isUsed = invite.used;
 

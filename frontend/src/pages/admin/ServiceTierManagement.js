@@ -158,7 +158,7 @@ const ServiceTierManagement = () => {
           {/* List */}
           <div className="space-y-4">
             <h2 className="text-2xl font-bold mb-6">Current Tiers ({tiers.length})</h2>
-            {tiers.map((tier) => (
+            {[...tiers].sort((a, b) => a.name.localeCompare(b.name)).map((tier) => (
               <div key={tier.id} className="card">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-1">

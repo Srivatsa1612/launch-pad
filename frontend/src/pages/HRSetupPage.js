@@ -63,7 +63,7 @@ const HRSetupPage = () => {
           <label className="block text-sm font-medium mb-3">HRIS / HR System in use</label>
           <select value={hrisSystem} onChange={(e) => setHrisSystem(e.target.value)} className="input-field">
             <option value="">Select System</option>
-            {hrisSystems.map(system => (
+            {[...hrisSystems].sort((a, b) => a.name.localeCompare(b.name)).map(system => (
               <option key={system.id} value={system.name}>{system.name}</option>
             ))}
           </select>
@@ -73,7 +73,7 @@ const HRSetupPage = () => {
           <label className="block text-sm font-medium mb-3">Update Method</label>
           <select value={updateMethod} onChange={(e) => setUpdateMethod(e.target.value)} className="input-field">
             <option value="">Select Method</option>
-            {updateMethods.map(method => (
+            {[...updateMethods].sort((a, b) => a.name.localeCompare(b.name)).map(method => (
               <option key={method.id} value={method.name}>{method.name}</option>
             ))}
           </select>
