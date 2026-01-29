@@ -176,6 +176,10 @@ class ConfigService {
     return this.config.supportOptions;
   }
 
+  getInvitations() {
+    return this.config.invitations || [];
+  }
+
   updateConfig(newConfig) {
     this.config = { ...this.config, ...newConfig };
     this.saveConfig();

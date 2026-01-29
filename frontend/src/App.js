@@ -15,6 +15,7 @@ import ConciergeManagement from './pages/admin/ConciergeManagement';
 import ServiceTierManagement from './pages/admin/ServiceTierManagement';
 import HRISManagement from './pages/admin/HRISManagement';
 import HardwareManagement from './pages/admin/HardwareManagement';
+import InvitationsManagement from './pages/admin/InvitationsManagement';
 
 const WizardContent = () => {
   const { currentStep, sessionId, createSession } = useWizard();
@@ -42,6 +43,9 @@ const WizardContent = () => {
     }
     if (window.location.pathname === '/admin/hardware') {
       return <HardwareManagement />;
+    }
+    if (window.location.pathname === '/admin/invitations') {
+      return <InvitationsManagement />;
     }
     return <AdminDashboard />;
   }

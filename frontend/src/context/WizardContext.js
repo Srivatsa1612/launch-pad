@@ -18,6 +18,12 @@ export const WizardProvider = ({ children }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [formData, setFormData] = useState({
+    primaryContactName: '',
+    primaryContactEmail: '',
+    primaryContactPhone: '',
+    notes: ''
+  });
 
   // Load session from localStorage on mount
   useEffect(() => {
@@ -109,9 +115,19 @@ export const WizardProvider = ({ children }) => {
     setSessionId(null);
     setCompanyName('');
     setCurrentStep(1);
+    setFormData({
+      primaryContactName: '',
+      primaryContactEmail: '',
+      primaryContactPhone: '',
+      notes: ''
+    });
     localStorage.removeItem('wizardSessionId');
     localStorage.removeItem('wizardCompanyName');
     localStorage.removeItem('wizardCurrentStep');
+  };
+
+  const updateFormData = (updates) => {
+    setFormData((prev) => ({ ...prev, ...updates }));
   };
 
   const value = {
@@ -120,6 +136,8 @@ export const WizardProvider = ({ children }) => {
     currentStep,
     loading,
     error,
+    formData,
+    updateFormData,
     createSession,
     loadSession,
     nextStep,

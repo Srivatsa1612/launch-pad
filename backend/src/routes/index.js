@@ -533,4 +533,38 @@ router.put('/admin/config/hardware-options', (req, res) => {
   }
 });
 
+/**
+ * POST /api/admin/config/invitations - Add new invitation
+ */
+router.post('/admin/config/invitations', (req, res) => {
+  try {
+    const config = configService.getConfig();
+    if (!config.invitations) {
+      config.invitations = [];
+    }
+    const newInvitation = req.body;
+    config.invitations.push(newInvitation);
+    configService.updateConfig(config);
+    res.status(201).json(newInvitation);
+  } catch (error) {
+    console.error('Error adding invitation:', error);
+    res.status(500).json({ error: 'Failed to add invitation' });
+  }
+});
+
+/**
+ * DELETE /api/admin/config/invitations/:id - Delete invitation
+ */
+router.delete('/admin/config/invitations/:id', (req, res) => {
+  try {
+    const config = configService.getConfig();
+    config.invitations = (config.invitations || []).filter(i => i.id !== req.params.id);
+    configService.updateConfig(config);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting invitation:', error);
+    res.status(500).json({ error: 'Failed to delete invitation' });
+  }
+});
+
 module.exports = router;

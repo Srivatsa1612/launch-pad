@@ -6,7 +6,8 @@ import {
   ShoppingCartIcon, 
   UsersIcon, 
   ComputerDesktopIcon,
-  Cog6ToothIcon 
+  Cog6ToothIcon,
+  EnvelopeIcon
 } from '@heroicons/react/24/outline';
 
 const AdminDashboard = () => {
@@ -101,6 +102,21 @@ const AdminDashboard = () => {
             </div>
             <h3 className="text-xl font-semibold mb-2">Hardware Options</h3>
             <p className="text-dark-400 text-sm">Manage devices and welcome gifts</p>
+            <div className="mt-4 text-primary-400 text-sm group-hover:translate-x-1 transition-transform">
+              Manage →
+            </div>
+          </a>
+
+          {/* Invitations */}
+          <a href="/admin/invitations" className="card hover:border-primary-500 transition-all group">
+            <div className="flex items-center justify-between mb-4">
+              <EnvelopeIcon className="w-8 h-8 text-primary-400" />
+              <span className="text-3xl font-bold text-primary-400">
+                {config?.invitations?.length || 0}
+              </span>
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Invitations</h3>
+            <p className="text-dark-400 text-sm">Create pre-filled customer invites</p>
             <div className="mt-4 text-primary-400 text-sm group-hover:translate-x-1 transition-transform">
               Manage →
             </div>

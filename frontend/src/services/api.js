@@ -89,7 +89,11 @@ export const adminAPI = {
   
   // HRIS & Hardware
   updateHRISSystems: (data) => api.put('/admin/config/hris-systems', data),
-  updateHardwareOptions: (data) => api.put('/admin/config/hardware-options', data)
+  updateHardwareOptions: (data) => api.put('/admin/config/hardware-options', data),
+  
+  // Invitations
+  addInvitation: (data) => api.post('/admin/config/invitations', data),
+  deleteInvitation: (id) => api.delete(`/admin/config/invitations/${id}`)
 };
 
 export default api;
