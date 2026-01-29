@@ -2,7 +2,10 @@
 import React from 'react';
 
 const ProgressBar = ({ currentStep, totalSteps = 7 }) => {
-  const progress = (currentStep / totalSteps) * 100;
+  // For review page (step 8), show it as step 1 of review
+  const displayStep = currentStep === 8 ? 1 : currentStep;
+  const progress = currentStep === 8 ? 100 : (currentStep / totalSteps) * 100;
+  const title = currentStep === 8 ? 'REVIEW & CONFIRM' : 'SETUP PROGRESS';
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50 bg-dark-900 border-b border-dark-800">
@@ -18,7 +21,7 @@ const ProgressBar = ({ currentStep, totalSteps = 7 }) => {
           </div>
           
           <div className="text-sm font-medium text-dark-400">
-            SETUP PROGRESS <span className="text-white ml-2">{currentStep}/7</span>
+            {title} <span className="text-white ml-2">{displayStep}/7</span>
           </div>
         </div>
         

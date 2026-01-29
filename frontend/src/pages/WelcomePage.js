@@ -4,8 +4,68 @@ import { useWizard } from '../context/WizardContext';
 import { ArrowRightIcon } from '@heroicons/react/24/solid';
 
 const WelcomePage = () => {
-  const { companyName, nextStep } = useWizard();
+  const { companyName, nextStep, loading, prefilledData } = useWizard();
 
+  // If loading prefilled data, show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 py-8">
+        <div className="max-w-3xl w-full text-center space-y-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
+          <p className="text-lg text-dark-400">Loading your setup information...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If no company name and no prefilled data, show the form
+  if (!companyName && !prefilledData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 py-8">
+        <div className="max-w-3xl w-full text-center space-y-8">
+          <h1 className="text-5xl font-bold">
+            Welcome to <span className="text-primary-400">flowCUSTODIAN</span>!
+          </h1>
+          
+          <p className="text-xl text-dark-300">
+            We're delighted to have you here. Think of us as your personal workflow
+            concierge — here to make everything smoother, smarter, and more
+            enjoyable from day one.
+          </p>
+
+          <div className="card text-left space-y-4 max-w-2xl mx-auto">
+            <p className="text-lg">
+              Let's get started with your flowCUSTODIAN onboarding!
+            </p>
+            
+            <p className="text-dark-300">
+              In the next few minutes, we'll confirm a few details, handle the essentials, and add a couple of thoughtful
+              touches — just like checking into your favorite hotel.
+            </p>
+            
+            <div className="flex items-start gap-3 text-primary-400 pt-4">
+              <svg className="w-5 h-5 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm">
+                Most clients complete this in under 7 minutes. Ready when you are?
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={nextStep}
+            className="btn-primary text-lg"
+          >
+            Begin Your Concierge Setup
+            <ArrowRightIcon className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // If prefilled data exists (from invite code), show welcome with company name
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-8">
       <div className="max-w-3xl w-full text-center space-y-8">

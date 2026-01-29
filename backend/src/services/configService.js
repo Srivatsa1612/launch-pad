@@ -102,19 +102,15 @@ class ConfigService {
         { id: 'file', name: 'File Upload', description: 'Upload CSV/Excel files' },
         { id: 'manual', name: 'Manual', description: 'Manual entry and updates' }
       ],
-      hardwareOptions: {
-        deviceProcurement: [
-          { id: 'standard', name: 'Standard', description: 'Pre-configured business laptops' },
-          { id: 'custom', name: 'Custom', description: 'Specify custom hardware requirements' },
-          { id: 'none', name: 'None', description: 'Employees use their own devices' }
-        ],
-        welcomeGifts: [
-          { id: 'premium', name: 'Premium', description: 'Branded merchandise bundle + tech accessories', value: 150 },
-          { id: 'standard', name: 'Standard', description: 'Branded welcome kit', value: 75 },
-          { id: 'minimal', name: 'Minimal', description: 'Welcome card only', value: 0 },
-          { id: 'none', name: 'None', description: 'No welcome gift', value: 0 }
-        ]
-      },
+      hardwareOptions: [
+        { id: 'standard-device', name: 'Standard', description: 'Pre-configured business laptops', option_type: 'device', estimated_value: 0 },
+        { id: 'custom-device', name: 'Custom', description: 'Specify custom hardware requirements', option_type: 'device', estimated_value: 0 },
+        { id: 'none-device', name: 'None', description: 'Employees use their own devices', option_type: 'device', estimated_value: 0 },
+        { id: 'premium-gift', name: 'Premium', description: 'Branded merchandise bundle + tech accessories', option_type: 'gift', estimated_value: 150 },
+        { id: 'standard-gift', name: 'Standard', description: 'Branded welcome kit', option_type: 'gift', estimated_value: 75 },
+        { id: 'minimal-gift', name: 'Minimal', description: 'Welcome card only', option_type: 'gift', estimated_value: 0 },
+        { id: 'none-gift', name: 'None', description: 'No welcome gift', option_type: 'gift', estimated_value: 0 }
+      ],
       supportOptions: {
         ticketSeverity: [
           { id: 'critical', name: 'Critical', sla: '15 minutes', description: 'System down, business impact' },
@@ -145,7 +141,7 @@ class ConfigService {
   async getConcierges() {
     try {
       await this.ensureConnection();
-      const result = await sqlService.query('SELECT * FROM concierges WHERE active = 1 ORDER BY name');
+      const result = await sqlService.query('SELECT * FROM concierges WHERE is_active = 1 ORDER BY name');
       return result.map(c => ({
         id: c.concierge_id,
         name: c.name,
@@ -163,13 +159,13 @@ class ConfigService {
   async getServiceTiers() {
     try {
       await this.ensureConnection();
-      const result = await sqlService.query('SELECT * FROM service_tiers WHERE active = 1 ORDER BY monthly_price');
+      const result = await sqlService.query('SELECT * FROM service_tiers ORDER BY monthly_price');
       return result.map(t => ({
         id: t.tier_id,
         name: t.name,
         monthlyPrice: t.monthly_price,
         features: t.features ? JSON.parse(t.features) : [],
-        recommended: t.recommended
+        recommended: t.is_recommended
       }));
     } catch (error) {
       console.error('Error loading service tiers from SQL:', error.message);
@@ -210,29 +206,18 @@ class ConfigService {
   async getHardwareOptions() {
     try {
       await this.ensureConnection();
-      const result = await sqlService.query('SELECT * FROM hardware_options ORDER BY category, name');
+      const result = await sqlService.query('SELECT * FROM hardware_options ORDER BY option_type, name');
       
-      const deviceProcurement = result
-        .filter(h => h.category === 'device_procurement')
-        .map(h => ({
-          id: h.option_id,
-          name: h.name,
-          description: h.description
-        }));
-      
-      const welcomeGifts = result
-        .filter(h => h.category === 'welcome_gift')
-        .map(h => ({
-          id: h.option_id,
-          name: h.name,
-          description: h.description,
-          value: h.value
-        }));
-      
-      return { deviceProcurement, welcomeGifts };
+      return result.map(h => ({
+        id: h.option_id,
+        name: h.name,
+        description: h.description,
+        option_type: h.option_type,
+        estimated_value: h.estimated_value
+      }));
     } catch (error) {
       console.error('Error loading hardware options from SQL:', error.message);
-      return this.defaultConfig.hardwareOptions;
+      return this.defaultConfig.hardwareOptions || [];
     }
   }
 
@@ -245,9 +230,13 @@ class ConfigService {
       await this.ensureConnection();
       const result = await sqlService.query('SELECT * FROM invitations ORDER BY created_at DESC');
       return result.map(i => ({
-        id: i.id,
-        code: i.code,
-        customerProfile: i.customer_profile ? JSON.parse(i.customer_profile) : {},
+        id: i.invitation_id,
+        code: i.invitation_id,
+        companyName: i.company_name,
+        contactName: i.contact_name || '',
+        contactEmail: i.contact_email || '',
+        contactPhone: i.contact_phone || '',
+        notes: i.notes || '',
         used: i.used,
         usedAt: i.used_at,
         createdAt: i.created_at

@@ -24,19 +24,20 @@ class WizardDatabaseService {
       await this.ensureConnection();
       
       const sessionId = data.session_id || uuidv4();
-      const started_at = new Date();
+      const createdAt = new Date();
       
       await sqlService.query(`
-        INSERT INTO wizard_sessions (session_id, company_name, started_at, status)
-        VALUES (@sessionId, @companyName, @startedAt, 'in_progress')
+        INSERT INTO wizard_sessions (session_id, company_name, created_at, updated_at, status, current_step)
+        VALUES (@sessionId, @companyName, @createdAt, @updatedAt, 'in_progress', 1)
       `, {
         sessionId,
         companyName: data.company_name || 'New Customer',
-        startedAt: started_at
+        createdAt,
+        updatedAt: createdAt
       });
       
       console.log('✓ Created wizard session:', sessionId);
-      return { session_id: sessionId, started_at };
+      return { session_id: sessionId, created_at: createdAt };
     } catch (error) {
       console.error('Error creating session:', error);
       throw error;
@@ -110,6 +111,8 @@ class WizardDatabaseService {
         updates.push('completed_at = @completedAt');
         params.completedAt = new Date();
       }
+      updates.push('updated_at = @updatedAt');
+      params.updatedAt = new Date();
       
       if (updates.length > 0) {
         await sqlService.query(
@@ -133,27 +136,72 @@ class WizardDatabaseService {
     try {
       await this.ensureConnection();
       
-      // Delete existing contacts for this session
-      await sqlService.query(
-        'DELETE FROM key_contacts WHERE session_id = @sessionId',
+      const existing = await sqlService.query(
+        'SELECT contact_id FROM key_contacts WHERE session_id = @sessionId',
         { sessionId }
       );
-      
-      // Insert new contacts
-      for (const contact of contacts) {
+
+      const params = {
+        sessionId,
+        billingName: contacts?.billing?.name || null,
+        billingEmail: contacts?.billing?.email || null,
+        billingPhone: contacts?.billing?.phone || null,
+        techName: contacts?.tech?.name || null,
+        techEmail: contacts?.tech?.email || null,
+        techPhone: contacts?.tech?.phone || null,
+        emergencyName: contacts?.emergency?.name || null,
+        emergencyEmail: contacts?.emergency?.email || null,
+        emergencyPhone: contacts?.emergency?.phone || null
+      };
+
+      if (existing && existing.length > 0) {
         await sqlService.query(`
-          INSERT INTO key_contacts (session_id, role, name, email, phone)
-          VALUES (@sessionId, @role, @name, @email, @phone)
-        `, {
-          sessionId,
-          role: contact.role,
-          name: contact.name,
-          email: contact.email,
-          phone: contact.phone || null
-        });
+          UPDATE key_contacts
+          SET billing_name = @billingName,
+              billing_email = @billingEmail,
+              billing_phone = @billingPhone,
+              tech_name = @techName,
+              tech_email = @techEmail,
+              tech_phone = @techPhone,
+              emergency_name = @emergencyName,
+              emergency_email = @emergencyEmail,
+              emergency_phone = @emergencyPhone,
+              updated_at = GETUTCDATE()
+          WHERE session_id = @sessionId
+        `, params);
+      } else {
+        await sqlService.query(`
+          INSERT INTO key_contacts (
+            session_id,
+            billing_name,
+            billing_email,
+            billing_phone,
+            tech_name,
+            tech_email,
+            tech_phone,
+            emergency_name,
+            emergency_email,
+            emergency_phone,
+            created_at,
+            updated_at
+          ) VALUES (
+            @sessionId,
+            @billingName,
+            @billingEmail,
+            @billingPhone,
+            @techName,
+            @techEmail,
+            @techPhone,
+            @emergencyName,
+            @emergencyEmail,
+            @emergencyPhone,
+            GETUTCDATE(),
+            GETUTCDATE()
+          )
+        `, params);
       }
-      
-      console.log(`✓ Saved ${contacts.length} contacts for session:`, sessionId);
+
+      console.log('✓ Saved contacts for session:', sessionId);
       return contacts;
     } catch (error) {
       console.error('Error saving contacts:', error);
@@ -173,10 +221,10 @@ class WizardDatabaseService {
         { sessionId }
       );
       
-      return result || [];
+      return result && result.length > 0 ? result[0] : null;
     } catch (error) {
       console.error('Error getting contacts:', error);
-      return [];
+      return null;
     }
   }
 
@@ -197,32 +245,55 @@ class WizardDatabaseService {
         // Update existing order
         await sqlService.query(`
           UPDATE service_orders
-          SET concierge_id = @conciergeId, 
-              tier_id = @tierId,
-              user_count = @userCount,
+          SET service_tier = @serviceTier,
               start_date = @startDate,
-              special_requirements = @specialRequirements
+              contract_term = @contractTerm,
+              monthly_commitment = @monthlyCommitment,
+              included_features = @includedFeatures,
+              confirmation_accepted = @confirmationAccepted,
+              updated_at = GETUTCDATE()
           WHERE session_id = @sessionId
         `, {
           sessionId,
-          conciergeId: order.concierge_id,
-          tierId: order.tier_id,
-          userCount: order.user_count,
+          serviceTier: order.service_tier,
           startDate: order.start_date || null,
-          specialRequirements: order.special_requirements || null
+          contractTerm: order.contract_term || null,
+          monthlyCommitment: order.monthly_commitment || null,
+          includedFeatures: order.included_features || null,
+          confirmationAccepted: order.confirmation_accepted ? 1 : 0
         });
       } else {
         // Insert new order
         await sqlService.query(`
-          INSERT INTO service_orders (session_id, concierge_id, tier_id, user_count, start_date, special_requirements)
-          VALUES (@sessionId, @conciergeId, @tierId, @userCount, @startDate, @specialRequirements)
+          INSERT INTO service_orders (
+            session_id,
+            service_tier,
+            start_date,
+            contract_term,
+            monthly_commitment,
+            included_features,
+            confirmation_accepted,
+            created_at,
+            updated_at
+          ) VALUES (
+            @sessionId,
+            @serviceTier,
+            @startDate,
+            @contractTerm,
+            @monthlyCommitment,
+            @includedFeatures,
+            @confirmationAccepted,
+            GETUTCDATE(),
+            GETUTCDATE()
+          )
         `, {
           sessionId,
-          conciergeId: order.concierge_id,
-          tierId: order.tier_id,
-          userCount: order.user_count,
+          serviceTier: order.service_tier,
           startDate: order.start_date || null,
-          specialRequirements: order.special_requirements || null
+          contractTerm: order.contract_term || null,
+          monthlyCommitment: order.monthly_commitment || null,
+          includedFeatures: order.included_features || null,
+          confirmationAccepted: order.confirmation_accepted ? 1 : 0
         });
       }
       
@@ -262,7 +333,7 @@ class WizardDatabaseService {
       
       // Check if HR setup exists
       const existing = await sqlService.query(
-        'SELECT hr_id FROM hr_setup WHERE session_id = @sessionId',
+        'SELECT hr_setup_id FROM hr_setup WHERE session_id = @sessionId',
         { sessionId }
       );
       
@@ -270,32 +341,45 @@ class WizardDatabaseService {
         // Update existing setup
         await sqlService.query(`
           UPDATE hr_setup
-          SET hris_system_id = @hrisSystemId,
-              update_method_id = @updateMethodId,
-              update_frequency = @updateFrequency,
-              api_credentials_provided = @apiCredentialsProvided,
-              notes = @notes
+          SET hris_system = @hrisSystem,
+              update_method = @updateMethod,
+              file_uploaded = @fileUploaded,
+              sync_frequency = @syncFrequency,
+              updated_at = GETUTCDATE()
           WHERE session_id = @sessionId
         `, {
           sessionId,
-          hrisSystemId: hrData.hris_system_id,
-          updateMethodId: hrData.update_method_id,
-          updateFrequency: hrData.update_frequency || null,
-          apiCredentialsProvided: hrData.api_credentials_provided || false,
-          notes: hrData.notes || null
+          hrisSystem: hrData.hris_system,
+          updateMethod: hrData.update_method,
+          fileUploaded: hrData.file_uploaded || null,
+          syncFrequency: hrData.sync_frequency || null
         });
       } else {
         // Insert new setup
         await sqlService.query(`
-          INSERT INTO hr_setup (session_id, hris_system_id, update_method_id, update_frequency, api_credentials_provided, notes)
-          VALUES (@sessionId, @hrisSystemId, @updateMethodId, @updateFrequency, @apiCredentialsProvided, @notes)
+          INSERT INTO hr_setup (
+            session_id,
+            hris_system,
+            update_method,
+            file_uploaded,
+            sync_frequency,
+            created_at,
+            updated_at
+          ) VALUES (
+            @sessionId,
+            @hrisSystem,
+            @updateMethod,
+            @fileUploaded,
+            @syncFrequency,
+            GETUTCDATE(),
+            GETUTCDATE()
+          )
         `, {
           sessionId,
-          hrisSystemId: hrData.hris_system_id,
-          updateMethodId: hrData.update_method_id,
-          updateFrequency: hrData.update_frequency || null,
-          apiCredentialsProvided: hrData.api_credentials_provided || false,
-          notes: hrData.notes || null
+          hrisSystem: hrData.hris_system,
+          updateMethod: hrData.update_method,
+          fileUploaded: hrData.file_uploaded || null,
+          syncFrequency: hrData.sync_frequency || null
         });
       }
       
@@ -335,7 +419,7 @@ class WizardDatabaseService {
       
       // Check if preferences exist
       const existing = await sqlService.query(
-        'SELECT hardware_id FROM hardware_preferences WHERE session_id = @sessionId',
+        'SELECT hw_pref_id FROM hardware_preferences WHERE session_id = @sessionId',
         { sessionId }
       );
       
@@ -343,26 +427,35 @@ class WizardDatabaseService {
         // Update existing preferences
         await sqlService.query(`
           UPDATE hardware_preferences
-          SET device_procurement_id = @deviceProcurementId,
-              welcome_gift_id = @welcomeGiftId,
-              additional_requirements = @additionalRequirements
+          SET device_choice = @deviceChoice,
+              welcome_gift_choice = @welcomeGiftChoice,
+              updated_at = GETUTCDATE()
           WHERE session_id = @sessionId
         `, {
           sessionId,
-          deviceProcurementId: hardware.device_procurement_id,
-          welcomeGiftId: hardware.welcome_gift_id,
-          additionalRequirements: hardware.additional_requirements || null
+          deviceChoice: hardware.device_choice,
+          welcomeGiftChoice: hardware.welcome_gift_choice
         });
       } else {
         // Insert new preferences
         await sqlService.query(`
-          INSERT INTO hardware_preferences (session_id, device_procurement_id, welcome_gift_id, additional_requirements)
-          VALUES (@sessionId, @deviceProcurementId, @welcomeGiftId, @additionalRequirements)
+          INSERT INTO hardware_preferences (
+            session_id,
+            device_choice,
+            welcome_gift_choice,
+            created_at,
+            updated_at
+          ) VALUES (
+            @sessionId,
+            @deviceChoice,
+            @welcomeGiftChoice,
+            GETUTCDATE(),
+            GETUTCDATE()
+          )
         `, {
           sessionId,
-          deviceProcurementId: hardware.device_procurement_id,
-          welcomeGiftId: hardware.welcome_gift_id,
-          additionalRequirements: hardware.additional_requirements || null
+          deviceChoice: hardware.device_choice,
+          welcomeGiftChoice: hardware.welcome_gift_choice
         });
       }
       
@@ -410,29 +503,42 @@ class WizardDatabaseService {
         // Update existing connection
         await sqlService.query(`
           UPDATE support_connections
-          SET primary_channel = @primaryChannel,
-              sla_tier = @slaTier,
-              escalation_contact = @escalationContact,
-              special_instructions = @specialInstructions
+          SET assigned_concierge = @assignedConcierge,
+              concierge_email = @conciergeEmail,
+              concierge_phone = @conciergePhone,
+              calendar_url = @calendarUrl
           WHERE session_id = @sessionId
         `, {
           sessionId,
-          primaryChannel: support.primary_channel,
-          slaTier: support.sla_tier,
-          escalationContact: support.escalation_contact || null,
-          specialInstructions: support.special_instructions || null
+          assignedConcierge: support.assigned_concierge,
+          conciergeEmail: support.concierge_email || null,
+          conciergePhone: support.concierge_phone || null,
+          calendarUrl: support.calendar_url || null
         });
       } else {
         // Insert new connection
         await sqlService.query(`
-          INSERT INTO support_connections (session_id, primary_channel, sla_tier, escalation_contact, special_instructions)
-          VALUES (@sessionId, @primaryChannel, @slaTier, @escalationContact, @specialInstructions)
+          INSERT INTO support_connections (
+            session_id,
+            assigned_concierge,
+            concierge_email,
+            concierge_phone,
+            calendar_url,
+            created_at
+          ) VALUES (
+            @sessionId,
+            @assignedConcierge,
+            @conciergeEmail,
+            @conciergePhone,
+            @calendarUrl,
+            GETUTCDATE()
+          )
         `, {
           sessionId,
-          primaryChannel: support.primary_channel,
-          slaTier: support.sla_tier,
-          escalationContact: support.escalation_contact || null,
-          specialInstructions: support.special_instructions || null
+          assignedConcierge: support.assigned_concierge,
+          conciergeEmail: support.concierge_email || null,
+          conciergePhone: support.concierge_phone || null,
+          calendarUrl: support.calendar_url || null
         });
       }
       
@@ -471,7 +577,7 @@ class WizardDatabaseService {
       await this.ensureConnection();
       
       const result = await sqlService.query(
-        'SELECT * FROM wizard_sessions ORDER BY started_at DESC'
+        'SELECT * FROM wizard_sessions ORDER BY created_at DESC'
       );
       
       return result || [];
@@ -489,13 +595,14 @@ class WizardDatabaseService {
       await this.ensureConnection();
       
       await sqlService.query(`
-        INSERT INTO audit_log (session_id, action, details, timestamp)
-        VALUES (@sessionId, @action, @details, @timestamp)
+        INSERT INTO audit_log (action, table_name, record_id, changed_by, changes)
+        VALUES (@action, @tableName, @recordId, @changedBy, @changes)
       `, {
-        sessionId,
         action,
-        details: JSON.stringify(details),
-        timestamp: new Date()
+        tableName: details?.table || 'wizard_sessions',
+        recordId: sessionId,
+        changedBy: details?.changedBy || 'system',
+        changes: JSON.stringify(details || {})
       });
     } catch (error) {
       console.error('Error logging audit:', error);

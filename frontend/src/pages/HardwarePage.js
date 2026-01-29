@@ -10,13 +10,13 @@ const HardwarePage = () => {
   const [procurement, setProcurement] = useState('custom');
   const [requirements, setRequirements] = useState('');
   const [gift, setGift] = useState('standard');
-  const [hardwareOptions, setHardwareOptions] = useState({ deviceProcurement: [], welcomeGifts: [] });
+  const [hardwareOptions, setHardwareOptions] = useState([]);
 
   useEffect(() => {
     const loadConfig = async () => {
       try {
         const response = await configAPI.getAll();
-        setHardwareOptions(response.data.hardwareOptions || { deviceProcurement: [], welcomeGifts: [] });
+        setHardwareOptions(Array.isArray(response.data.hardwareOptions) ? response.data.hardwareOptions : []);
       } catch (error) {
         console.error('Error loading hardware config:', error);
       }
@@ -48,7 +48,7 @@ const HardwarePage = () => {
         <div className="card">
           <h3 className="text-xl font-semibold mb-4">Device Procurement</h3>
           <div className="space-y-3">
-            {[...hardwareOptions.deviceProcurement].sort((a, b) => a.name.localeCompare(b.name)).map(option => (
+            {[...hardwareOptions.filter(h => h.option_type === 'device')].sort((a, b) => a.name.localeCompare(b.name)).map(option => (
               <label key={option.id} className="flex items-start gap-3">
                 <input 
                   type="radio" 
@@ -79,7 +79,7 @@ const HardwarePage = () => {
         <div className="card">
           <h3 className="text-xl font-semibold mb-4">Welcome Gift</h3>
           <div className="grid grid-cols-2 gap-4">
-            {[...hardwareOptions.welcomeGifts].sort((a, b) => a.name.localeCompare(b.name)).map(giftOption => (
+            {[...hardwareOptions.filter(h => h.option_type === 'gift')].sort((a, b) => a.name.localeCompare(b.name)).map(giftOption => (
               <label key={giftOption.id} className="card cursor-pointer hover:border-primary-500 transition-all">
                 <input 
                   type="radio" 

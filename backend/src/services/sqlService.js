@@ -48,6 +48,7 @@ class SQLService {
 
   async query(queryString, params = {}) {
     try {
+      await this.ensureConnection();
       const request = this.pool.request();
       
       // Add parameters to request
@@ -65,6 +66,7 @@ class SQLService {
 
   async execute(procedureName, params = {}) {
     try {
+      await this.ensureConnection();
       const request = this.pool.request();
       
       // Add parameters to request
@@ -85,7 +87,14 @@ class SQLService {
   }
 
   async ensureConnection() {
-    if (!this.pool) {
+    if (!this.pool || !this.pool.connected) {
+      if (this.pool) {
+        try {
+          await this.pool.close();
+        } catch (error) {
+          console.warn('Warning closing SQL pool:', error.message);
+        }
+      }
       await this.connect();
     }
   }

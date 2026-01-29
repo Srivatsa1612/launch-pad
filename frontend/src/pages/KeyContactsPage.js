@@ -72,7 +72,31 @@ const KeyContactsPage = () => {
       nextStep();
     } catch (error) {
       console.error('Error saving contacts:', error);
-      alert('Failed to save contacts. Please try again.');
+      
+      // Extract detailed error message
+      let errorMessage = 'Failed to save contacts. Please try again.';
+      
+      if (error.response?.data) {
+        // Check for validation errors
+        if (error.response.data.errors && Array.isArray(error.response.data.errors)) {
+          errorMessage = 'Validation errors:\n' + 
+            error.response.data.errors.map(e => `- ${e.msg} (${e.param})`).join('\n');
+        } 
+        // Check for general error with details
+        else if (error.response.data.details) {
+          errorMessage = `Failed to save contacts: ${error.response.data.details}`;
+        }
+        // Check for error message
+        else if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        }
+        // Check for error string
+        else if (error.response.data.error) {
+          errorMessage = error.response.data.error;
+        }
+      }
+      
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }

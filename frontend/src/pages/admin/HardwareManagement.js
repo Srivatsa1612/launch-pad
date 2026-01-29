@@ -4,7 +4,7 @@ import { configAPI, adminAPI } from '../../services/api';
 import { PlusIcon, TrashIcon } from '@heroicons/react/24/solid';
 
 const HardwareManagement = () => {
-  const [hardware, setHardware] = useState({ deviceProcurement: [], welcomeGifts: [] });
+  const [hardware, setHardware] = useState([]);
   const [tab, setTab] = useState('devices');
   const [form, setForm] = useState({ name: '', description: '', value: 0 });
 
@@ -15,7 +15,7 @@ const HardwareManagement = () => {
   const loadConfig = async () => {
     try {
       const response = await configAPI.getAll();
-      setHardware(response.data.hardwareOptions || { deviceProcurement: [], welcomeGifts: [] });
+      setHardware(Array.isArray(response.data.hardwareOptions) ? response.data.hardwareOptions : []);
     } catch (error) {
       console.error('Error loading config:', error);
     }
@@ -27,12 +27,11 @@ const HardwareManagement = () => {
       const newDevice = {
         id: form.name.toLowerCase().replace(/\s+/g, '-'),
         name: form.name,
-        description: form.description
+        description: form.description,
+        option_type: 'device',
+        estimated_value: 0
       };
-      const updated = {
-        ...hardware,
-        deviceProcurement: [...hardware.deviceProcurement, newDevice]
-      };
+      const updated = [...hardware, newDevice];
       await adminAPI.updateHardwareOptions(updated);
       setHardware(updated);
       setForm({ name: '', description: '', value: 0 });
@@ -49,12 +48,11 @@ const HardwareManagement = () => {
         id: form.name.toLowerCase().replace(/\s+/g, '-'),
         name: form.name,
         description: form.description,
-        value: parseFloat(form.value) || 0
+        value: parseFloat(form.value) || 0,
+        option_type: 'gift',
+        estimated_value: parseFloat(form.value) || 0
       };
-      const updated = {
-        ...hardware,
-        welcomeGifts: [...hardware.welcomeGifts, newGift]
-      };
+      const updated = [...hardware, newGift];
       await adminAPI.updateHardwareOptions(updated);
       setHardware(updated);
       setForm({ name: '', description: '', value: 0 });
@@ -67,10 +65,7 @@ const HardwareManagement = () => {
   const handleDeleteDevice = async (id) => {
     if (!window.confirm('Delete this device option?')) return;
     try {
-      const updated = {
-        ...hardware,
-        deviceProcurement: hardware.deviceProcurement.filter(d => d.id !== id)
-      };
+      const updated = hardware.filter(h => h.id !== id);
       await adminAPI.updateHardwareOptions(updated);
       setHardware(updated);
     } catch (error) {
@@ -82,10 +77,7 @@ const HardwareManagement = () => {
   const handleDeleteGift = async (id) => {
     if (!window.confirm('Delete this welcome gift?')) return;
     try {
-      const updated = {
-        ...hardware,
-        welcomeGifts: hardware.welcomeGifts.filter(g => g.id !== id)
-      };
+      const updated = hardware.filter(h => h.id !== id);
       await adminAPI.updateHardwareOptions(updated);
       setHardware(updated);
     } catch (error) {
@@ -165,8 +157,8 @@ const HardwareManagement = () => {
             </div>
 
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold mb-6">Current Options ({hardware.deviceProcurement.length})</h2>
-              {[...hardware.deviceProcurement].sort((a, b) => a.name.localeCompare(b.name)).map((device) => (
+              <h2 className="text-2xl font-bold mb-6">Current Options ({hardware.filter(h => h.option_type === 'device').length})</h2>
+              {[...hardware.filter(h => h.option_type === 'device')].sort((a, b) => a.name.localeCompare(b.name)).map((device) => (
                 <div key={device.id} className="card">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
@@ -233,14 +225,14 @@ const HardwareManagement = () => {
             </div>
 
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold mb-6">Current Gifts ({hardware.welcomeGifts.length})</h2>
-              {[...hardware.welcomeGifts].sort((a, b) => a.name.localeCompare(b.name)).map((gift) => (
+              <h2 className="text-2xl font-bold mb-6">Current Gifts ({hardware.filter(h => h.option_type === 'gift').length})</h2>
+              {[...hardware.filter(h => h.option_type === 'gift')].sort((a, b) => a.name.localeCompare(b.name)).map((gift) => (
                 <div key={gift.id} className="card">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <h3 className="font-semibold">{gift.name}</h3>
                       <p className="text-sm text-dark-400 mt-2">{gift.description}</p>
-                      <p className="text-xs text-primary-400 mt-2">Value: ${gift.value}</p>
+                      <p className="text-xs text-primary-400 mt-2">Value: ${gift.estimated_value || gift.value}</p>
                     </div>
                     <button
                       onClick={() => handleDeleteGift(gift.id)}

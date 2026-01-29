@@ -239,6 +239,23 @@ END
 GO
 
 -- =====================================================
+-- CUSTOMER PRE-SETUP PROFILES
+-- =====================================================
+
+IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'customer_profiles')
+BEGIN
+    CREATE TABLE customer_profiles (
+        profile_code NVARCHAR(50) PRIMARY KEY,
+        profile_json NVARCHAR(MAX),
+        created_at DATETIME2 DEFAULT GETUTCDATE(),
+        updated_at DATETIME2 DEFAULT GETUTCDATE(),
+        used BIT DEFAULT 0,
+        used_at DATETIME2 NULL
+    );
+END
+GO
+
+-- =====================================================
 -- AUDIT LOGGING TABLE
 -- =====================================================
 
@@ -268,8 +285,8 @@ IF NOT EXISTS (SELECT 1 FROM concierges WHERE concierge_id = 'julian-sterling')
 BEGIN
     INSERT INTO concierges (concierge_id, name, email, phone, specialties)
     VALUES 
-        ('julian-sterling', 'Julian Sterling', 'julian.sterling@m-theorygrp.com', '+1-555-CONCIERGE', '["Enterprise Onboarding", "Technical Integration", "Executive Support"]'),
-        ('sophia-chen', 'Sophia Chen', 'sophia.chen@m-theorygrp.com', '+1-555-SUPPORT', '["Customer Success", "Training", "Process Optimization"]');
+        ('raffi-parikian', 'Raffi Parikian', 'rparikian@m-theorygrp.com', '+1-555-CONCIERGE', '["Enterprise Onboarding", "Technical Integration", "Executive Support"]'),
+        ('Christian-Keamy', 'Christian Keamy', 'ckeamy@m-theorygrp.com', '+1-555-SUPPORT', '["Customer Success", "Training", "Process Optimization"]');
 END
 GO
 

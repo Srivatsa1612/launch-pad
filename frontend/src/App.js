@@ -10,6 +10,7 @@ import HRSetupPage from './pages/HRSetupPage';
 import HardwarePage from './pages/HardwarePage';
 import SupportPage from './pages/SupportPage';
 import CompletionPage from './pages/CompletionPage';
+import ReviewPage from './pages/ReviewPage';
 import DashboardPage from './pages/DashboardPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ConciergeManagement from './pages/admin/ConciergeManagement';
@@ -20,14 +21,11 @@ import InvitationsManagement from './pages/admin/InvitationsManagement';
 import CustomerPreSetup from './pages/admin/CustomerPreSetup';
 
 const WizardContent = () => {
-  const { currentStep, sessionId, createSession } = useWizard();
+  const { currentStep, sessionId, createSession, invitationCode } = useWizard();
   const [companyInput, setCompanyInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
-  const [inviteCode, setInviteCode] = useState(null);
-  const [isValidInvite, setIsValidInvite] = useState(false);
-  const [inviteError, setInviteError] = useState('');
   const [inviteInput, setInviteInput] = useState('');
 
   // Show splash screen for 2 seconds on initial load
@@ -38,33 +36,6 @@ const WizardContent = () => {
     
     return () => clearTimeout(timer);
   }, []);
-
-  // Check URL for invite parameter and validate it
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('invite');
-    if (code) {
-      setInviteCode(code);
-      validateInviteCode(code);
-    }
-  }, []);
-
-  // Validate invite code
-  const validateInviteCode = async (code) => {
-    try {
-      const response = await fetch(`/api/admin/customer-profiles/${code}`);
-      if (response.ok) {
-        setIsValidInvite(true);
-        setInviteError('');
-      } else {
-        setIsValidInvite(false);
-        setInviteError('Invalid or expired invitation link');
-      }
-    } catch (error) {
-      setIsValidInvite(false);
-      setInviteError('Unable to validate invitation');
-    }
-  };
 
   // Check URL for dashboard route
   React.useEffect(() => {
@@ -112,7 +83,7 @@ const WizardContent = () => {
 
     try {
       setLoading(true);
-      await createSession(companyInput, inviteCode);
+      await createSession(companyInput, invitationCode);
     } catch (error) {
       alert('Failed to start wizard. Please try again.');
     } finally {
@@ -124,12 +95,13 @@ const WizardContent = () => {
     e.preventDefault();
     const trimmed = inviteInput.trim();
     if (!trimmed) return;
-    setInviteCode(trimmed);
-    await validateInviteCode(trimmed);
+    
+    // Redirect to URL with invite code so WizardContext picks it up
+    window.location.href = `/?invite=${trimmed}`;
   };
 
-  // Show prompt for invite code when none is provided
-  if (!sessionId && !inviteCode) {
+  // Show prompt for invite code when none is provided and no session exists
+  if (!sessionId && !invitationCode && !showDashboard && !window.location.pathname.startsWith('/admin')) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4 bg-dark-950">
         <div className="max-w-md w-full">
@@ -196,6 +168,7 @@ const WizardContent = () => {
     );
   }
 
+  /* REMOVED - WizardContext now handles all invite code logic
   // Show error for invalid invite
   if (!sessionId && inviteCode && !isValidInvite) {
     return (
@@ -229,7 +202,9 @@ const WizardContent = () => {
       </div>
     );
   }
+  */
 
+  /* REMOVED - WizardContext now handles all invite code logic
   // Show company name input if no session (but have valid invite)
   if (!sessionId && inviteCode && isValidInvite) {
     return (
@@ -280,6 +255,7 @@ const WizardContent = () => {
       </div>
     );
   }
+  */
 
   // Render the appropriate step
   const renderStep = () => {
@@ -298,6 +274,8 @@ const WizardContent = () => {
         return <SupportPage />;
       case 7:
         return <CompletionPage />;
+      case 8:
+        return <ReviewPage />;
       default:
         return <WelcomePage />;
     }
@@ -305,8 +283,8 @@ const WizardContent = () => {
 
   return (
     <div className="min-h-screen bg-dark-950">
-      {currentStep < 7 && <ProgressBar currentStep={currentStep} />}
-      <div className={currentStep < 7 ? 'pt-24' : ''}>
+      {(currentStep < 7 || currentStep === 8) && <ProgressBar currentStep={currentStep} />}
+      <div className={currentStep < 7 || currentStep === 8 ? 'pt-24' : ''}>
         {renderStep()}
       </div>
     </div>

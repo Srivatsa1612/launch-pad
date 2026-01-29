@@ -7,6 +7,7 @@ const compression = require('compression');
 const config = require('./config');
 const routes = require('./routes');
 const sqlService = require('./services/sqlService');
+const multer = require('multer');
 
 const app = express();
 

@@ -57,15 +57,7 @@ class WizardService {
    * Save key contacts
    */
   async saveContacts(sessionId, contacts) {
-    // Convert contacts object to array format
-    const contactsArray = Object.entries(contacts).map(([role, data]) => ({
-      role,
-      name: data.name,
-      email: data.email,
-      phone: data.phone || ''
-    }));
-
-    await dbService.saveKeyContacts(sessionId, contactsArray);
+    await dbService.saveKeyContacts(sessionId, contacts);
     await this.updateSessionProgress(sessionId, 3);
     return { success: true, contacts };
   }
@@ -74,23 +66,29 @@ class WizardService {
    * Get contacts for session
    */
   async getContacts(sessionId) {
-    const contactsArray = await dbService.getKeyContacts(sessionId);
+    const contactRow = await dbService.getKeyContacts(sessionId);
 
-    if (!contactsArray || contactsArray.length === 0) {
+    if (!contactRow) {
       return null;
     }
 
-    // Convert array back to object format
-    const contacts = {};
-    contactsArray.forEach(contact => {
-      contacts[contact.role] = {
-        name: contact.name,
-        email: contact.email,
-        phone: contact.phone
-      };
-    });
-
-    return contacts;
+    return {
+      billing: {
+        name: contactRow.billing_name || '',
+        email: contactRow.billing_email || '',
+        phone: contactRow.billing_phone || ''
+      },
+      tech: {
+        name: contactRow.tech_name || '',
+        email: contactRow.tech_email || '',
+        phone: contactRow.tech_phone || ''
+      },
+      emergency: {
+        name: contactRow.emergency_name || '',
+        email: contactRow.emergency_email || '',
+        phone: contactRow.emergency_phone || ''
+      }
+    };
   }
 
   /**
@@ -98,11 +96,12 @@ class WizardService {
    */
   async saveServiceOrder(sessionId, order) {
     await dbService.saveServiceOrder(sessionId, {
-      concierge_id: order.concierge_id || order.conciergeId,
-      tier_id: order.tier_id || order.tierId || order.serviceTier,
-      user_count: order.user_count || order.userCount,
+      service_tier: order.service_tier || order.serviceTier,
       start_date: order.start_date || order.startDate,
-      special_requirements: order.special_requirements || order.specialRequirements
+      contract_term: order.contract_term || order.contractTerm,
+      monthly_commitment: order.monthly_commitment || order.monthlyCommitment,
+      included_features: order.included_features || (order.includedFeatures ? JSON.stringify(order.includedFeatures) : null),
+      confirmation_accepted: order.confirmation_accepted || order.confirmationAccepted || false
     });
 
     await this.updateSessionProgress(sessionId, 4);
@@ -120,12 +119,12 @@ class WizardService {
     }
 
     return {
-      conciergeId: order.concierge_id,
-      tierId: order.tier_id,
-      serviceTier: order.tier_id,
-      userCount: order.user_count,
+      serviceTier: order.service_tier,
       startDate: order.start_date,
-      specialRequirements: order.special_requirements
+      contractTerm: order.contract_term,
+      monthlyCommitment: order.monthly_commitment,
+      includedFeatures: order.included_features ? JSON.parse(order.included_features) : [],
+      confirmationAccepted: !!order.confirmation_accepted
     };
   }
 
@@ -134,11 +133,10 @@ class WizardService {
    */
   async saveHRSetup(sessionId, hrSetup) {
     await dbService.saveHRSetup(sessionId, {
-      hris_system_id: hrSetup.hris_system_id || hrSetup.hrisSystem,
-      update_method_id: hrSetup.update_method_id || hrSetup.updateMethod,
-      update_frequency: hrSetup.update_frequency || hrSetup.updateFrequency,
-      api_credentials_provided: hrSetup.api_credentials_provided || hrSetup.apiCredentialsProvided || false,
-      notes: hrSetup.notes || null
+      hris_system: hrSetup.hris_system || hrSetup.hrisSystem,
+      update_method: hrSetup.update_method || hrSetup.updateMethod,
+      file_uploaded: hrSetup.employeeFilePath || hrSetup.fileUploaded || null,
+      sync_frequency: hrSetup.update_frequency || hrSetup.updateFrequency || null
     });
 
     await this.updateSessionProgress(sessionId, 5);
@@ -156,11 +154,10 @@ class WizardService {
     }
 
     return {
-      hrisSystem: hrSetup.hris_system_id,
-      updateMethod: hrSetup.update_method_id,
-      updateFrequency: hrSetup.update_frequency,
-      apiCredentialsProvided: hrSetup.api_credentials_provided,
-      notes: hrSetup.notes
+      hrisSystem: hrSetup.hris_system,
+      updateMethod: hrSetup.update_method,
+      updateFrequency: hrSetup.sync_frequency,
+      employeeFilePath: hrSetup.file_uploaded || null
     };
   }
 
@@ -169,9 +166,8 @@ class WizardService {
    */
   async saveHardware(sessionId, hardware) {
     await dbService.saveHardwarePreferences(sessionId, {
-      device_procurement_id: hardware.device_procurement_id || hardware.deviceProcurement,
-      welcome_gift_id: hardware.welcome_gift_id || hardware.welcomeGift,
-      additional_requirements: hardware.additional_requirements || hardware.additionalRequirements
+      device_choice: hardware.device_choice || hardware.deviceProcurement,
+      welcome_gift_choice: hardware.welcome_gift_choice || hardware.welcomeGift
     });
 
     await this.updateSessionProgress(sessionId, 6);
@@ -189,9 +185,8 @@ class WizardService {
     }
 
     return {
-      deviceProcurement: hardware.device_procurement_id,
-      welcomeGift: hardware.welcome_gift_id,
-      additionalRequirements: hardware.additional_requirements
+      deviceProcurement: hardware.device_choice,
+      welcomeGift: hardware.welcome_gift_choice
     };
   }
 
@@ -200,10 +195,10 @@ class WizardService {
    */
   async saveSupportConnections(sessionId, support) {
     await dbService.saveSupportConnection(sessionId, {
-      primary_channel: support.primary_channel || support.primaryChannel,
-      sla_tier: support.sla_tier || support.slaTier,
-      escalation_contact: support.escalation_contact || support.escalationContact,
-      special_instructions: support.special_instructions || support.specialInstructions
+      assigned_concierge: support.assigned_concierge || support.conciergeName,
+      concierge_email: support.concierge_email || support.conciergeEmail,
+      concierge_phone: support.concierge_phone || support.conciergePhone,
+      calendar_url: support.calendar_url || support.calendarUrl || null
     });
 
     await this.updateSessionProgress(sessionId, 7);
@@ -221,10 +216,10 @@ class WizardService {
     }
 
     return {
-      primaryChannel: support.primary_channel,
-      slaTier: support.sla_tier,
-      escalationContact: support.escalation_contact,
-      specialInstructions: support.special_instructions
+      conciergeName: support.assigned_concierge,
+      conciergeEmail: support.concierge_email,
+      conciergePhone: support.concierge_phone,
+      calendarUrl: support.calendar_url
     };
   }
 
@@ -251,7 +246,7 @@ class WizardService {
       companyName: session.company_name,
       status: session.status,
       currentStep: session.current_step,
-      startedAt: session.started_at,
+      startedAt: session.created_at,
       completedAt: session.completed_at,
       contacts,
       serviceOrder,

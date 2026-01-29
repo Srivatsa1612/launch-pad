@@ -109,8 +109,7 @@ const AdminDashboard = () => {
             <div className="flex items-center justify-between mb-4">
               <ComputerDesktopIcon className="w-8 h-8 text-primary-400" />
               <span className="text-3xl font-bold text-primary-400">
-                {(config?.hardwareOptions?.deviceProcurement?.length || 0) + 
-                 (config?.hardwareOptions?.welcomeGifts?.length || 0)}
+                {Array.isArray(config?.hardwareOptions) ? config.hardwareOptions.length : 0}
               </span>
             </div>
             <h3 className="text-xl font-semibold mb-2">Hardware Options</h3>

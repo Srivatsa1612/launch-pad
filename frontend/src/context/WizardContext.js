@@ -29,46 +29,105 @@ export const WizardProvider = ({ children }) => {
 
   // Load session from localStorage and check for invite code on mount
   useEffect(() => {
-    const savedSessionId = localStorage.getItem('wizardSessionId');
-    const savedCompanyName = localStorage.getItem('wizardCompanyName');
-    const savedStep = localStorage.getItem('wizardCurrentStep');
+    const validateAndRestoreSession = async () => {
+      // Check URL for invite parameter FIRST - it should take precedence
+      const params = new URLSearchParams(window.location.search);
+      const inviteCode = params.get('invite');
+      
+      if (inviteCode) {
+        // URL invite code takes precedence - clear any saved session and load this one
+        console.log('Found invite code in URL:', inviteCode);
+        localStorage.removeItem('wizardSessionId');
+        localStorage.removeItem('wizardCompanyName');
+        localStorage.removeItem('wizardCurrentStep');
+        
+        setInvitationCode(inviteCode);
+        const data = await loadPrefilledData(inviteCode);
+        
+        // Check if data is substantially prefilled
+        // If yes, jump to ReviewPage (step 8) for confirmation
+        // If no, start at WelcomePage (step 1) with prefilled data in form fields
+        if (isDataSubstantiallyPrefilled(data)) {
+          console.log('Substantial data prefilled, jumping to ReviewPage (step 8)');
+          setCurrentStep(8);
+        } else {
+          console.log('Minimal data prefilled, starting at WelcomePage (step 1)');
+          setCurrentStep(1);
+        }
+      } else {
+        // No invite code in URL - try to restore saved session
+        const savedSessionId = localStorage.getItem('wizardSessionId');
+        const savedCompanyName = localStorage.getItem('wizardCompanyName');
+        const savedStep = localStorage.getItem('wizardCurrentStep');
 
-    if (savedSessionId) {
-      setSessionId(savedSessionId);
-      setCompanyName(savedCompanyName || '');
-      setCurrentStep(parseInt(savedStep) || 1);
-    }
+        if (savedSessionId) {
+          // Verify the session still exists in the database
+          try {
+            await sessionAPI.get(savedSessionId);
+            // Session is valid, restore it
+            setSessionId(savedSessionId);
+            setCompanyName(savedCompanyName || '');
+            setCurrentStep(parseInt(savedStep) || 1);
+            console.log('Restored session from localStorage:', savedSessionId);
+          } catch (error) {
+            // Session doesn't exist anymore, clear localStorage
+            console.warn('Stored session is invalid, clearing localStorage:', error.message);
+            localStorage.removeItem('wizardSessionId');
+            localStorage.removeItem('wizardCompanyName');
+            localStorage.removeItem('wizardCurrentStep');
+          }
+        }
+      }
+    };
 
-    // Check URL for invite parameter
-    const params = new URLSearchParams(window.location.search);
-    const inviteCode = params.get('invite');
-    if (inviteCode && !savedSessionId) {
-      setInvitationCode(inviteCode);
-      loadPrefilledData(inviteCode);
-    }
+    validateAndRestoreSession();
   }, []);
 
   // Load customer pre-setup profile from invitation code
   const loadPrefilledData = async (code) => {
     try {
       setLoading(true);
-      const response = await adminAPI.getCustomerProfile?.(code);
+      console.log('Loading prefilled data for code:', code);
+      const response = await adminAPI.getCustomerProfile(code);
+      console.log('API response:', response);
       if (response?.data) {
+        console.log('Prefilled data received:', response.data);
         setPrefilledData(response.data);
-        setCompanyName(response.data.companyName);
+        setCompanyName(response.data.companyName || '');
         setFormData({
           primaryContactName: response.data.contactName || '',
           primaryContactEmail: response.data.contactEmail || '',
           primaryContactPhone: response.data.contactPhone || '',
           notes: response.data.notes || ''
         });
+        return response.data;
+      } else {
+        console.warn('No data in response for code:', code);
       }
     } catch (err) {
-      console.warn('Could not load prefilled data:', err.message);
+      console.error('Error loading prefilled data for code:', code, 'Error:', err);
       setError(null); // Don't show error for missing invites
     } finally {
       setLoading(false);
     }
+    return null;
+  };
+
+  // Check if prefilled data is "complete enough" to warrant jumping to ReviewPage
+  // If only basic info (company name, contact), use normal wizard flow
+  // If substantial data is pre-filled, jump to ReviewPage for confirmation
+  const isDataSubstantiallyPrefilled = (data) => {
+    if (!data) return false;
+    
+    const hasServiceInfo = data.serviceTier && data.serviceTier.trim() !== '';
+    const hasHRInfo = data.hrisSystem && data.hrisSystem.trim() !== '';
+    const hasHardwareInfo = (data.deviceChoice && data.deviceChoice.trim() !== '') || 
+                           (data.giftChoice && data.giftChoice.trim() !== '');
+    const hasKeyContacts = (data.billingEmail || data.techEmail || data.emergencyEmail);
+    
+    // If at least 2 of these major sections are filled, consider it substantially prefilled
+    const filledSections = [hasServiceInfo, hasHRInfo, hasHardwareInfo, hasKeyContacts].filter(Boolean).length;
+    return filledSections >= 2;
   };
 
   // Save session to localStorage whenever it changes
@@ -85,7 +144,13 @@ export const WizardProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       const response = await sessionAPI.create(company, inviteCode);
-      setSessionId(response.data.sessionId);
+      console.log('Session creation response:', response.data);
+      // Backend returns session_id (snake_case), we need sessionId (camelCase)
+      const sessionIdValue = response.data.sessionId || response.data.session_id;
+      if (!sessionIdValue) {
+        throw new Error('No session ID returned from server');
+      }
+      setSessionId(sessionIdValue);
       setCompanyName(company);
       setCurrentStep(1);
       return response.data;
