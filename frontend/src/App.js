@@ -25,12 +25,10 @@ const WizardContent = () => {
   const [loading, setLoading] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
-  // eslint-disable-next-line no-unused-vars
   const [inviteCode, setInviteCode] = useState(null);
-  // eslint-disable-next-line no-unused-vars
   const [isValidInvite, setIsValidInvite] = useState(false);
-  // eslint-disable-next-line no-unused-vars
   const [inviteError, setInviteError] = useState('');
+  const [inviteInput, setInviteInput] = useState('');
 
   // Show splash screen for 2 seconds on initial load
   useEffect(() => {
@@ -122,7 +120,15 @@ const WizardContent = () => {
     }
   };
 
-  // Show error for invalid/missing invite
+  const handleInviteSubmit = async (e) => {
+    e.preventDefault();
+    const trimmed = inviteInput.trim();
+    if (!trimmed) return;
+    setInviteCode(trimmed);
+    await validateInviteCode(trimmed);
+  };
+
+  // Show prompt for invite code when none is provided
   if (!sessionId && !inviteCode) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4 bg-dark-950">
@@ -145,6 +151,27 @@ const WizardContent = () => {
                 To get started with flowCUSTODIAN, you'll need an invitation link from M-Theory.
               </p>
             </div>
+
+            <form onSubmit={handleInviteSubmit} className="space-y-4">
+              <div className="text-left">
+                <label className="block text-sm font-medium mb-2">Invitation Code</label>
+                <input
+                  type="text"
+                  value={inviteInput}
+                  onChange={(e) => setInviteInput(e.target.value)}
+                  placeholder="Paste your invitation code"
+                  className="input-field"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="btn-primary w-full justify-center"
+                disabled={!inviteInput.trim()}
+              >
+                Continue
+              </button>
+            </form>
 
             <div>
               <p className="text-dark-400 text-sm mb-4">

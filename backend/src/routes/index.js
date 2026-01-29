@@ -380,8 +380,28 @@ router.get('/support/:sessionId',
  */
 router.get('/config', async (req, res) => {
   try {
-    const config = configService.getConfig();
-    res.json(config);
+    const concierges = await configService.getConcierges();
+    const serviceTiers = await configService.getServiceTiers();
+    const hrSystems = await configService.getHRISSystems();
+    const updateMethods = await configService.getUpdateMethods();
+    const hardwareOptions = await configService.getHardwareOptions();
+    const invitations = await configService.getInvitations();
+
+    res.json({
+      concierges,
+      serviceTiers,
+      hrSystems,
+      updateMethods,
+      hardwareOptions,
+      invitations: invitations.map(inv => ({
+        id: inv.code,
+        code: inv.code,
+        ...(inv.customer_profile ? JSON.parse(inv.customer_profile) : {}),
+        createdAt: inv.created_at,
+        used: inv.used,
+        usedAt: inv.used_at
+      }))
+    });
   } catch (error) {
     console.error('Error getting configuration:', error);
     res.status(500).json({ error: 'Failed to retrieve configuration' });
@@ -562,16 +582,41 @@ router.put('/admin/config/hardware-options', (req, res) => {
 /**
  * POST /api/admin/config/invitations - Add new invitation
  */
-router.post('/admin/config/invitations', (req, res) => {
+router.post('/admin/config/invitations', async (req, res) => {
   try {
-    const config = configService.getConfig();
-    if (!config.invitations) {
-      config.invitations = [];
+    const { code, companyName, contactName, contactEmail, contactPhone, notes } = req.body;
+    
+    if (!code) {
+      return res.status(400).json({ error: 'Invitation code is required' });
     }
-    const newInvitation = req.body;
-    config.invitations.push(newInvitation);
-    configService.updateConfig(config);
-    res.status(201).json(newInvitation);
+
+    const customerProfile = {
+      companyName: companyName || '',
+      contactName: contactName || '',
+      contactEmail: contactEmail || '',
+      contactPhone: contactPhone || '',
+      notes: notes || ''
+    };
+
+    const result = await sqlService.query(
+      `INSERT INTO invitations (code, customer_profile, created_at)
+       VALUES (@code, @profile, GETUTCDATE())`,
+      {
+        code: code,
+        profile: JSON.stringify(customerProfile)
+      }
+    );
+
+    res.status(201).json({
+      code,
+      companyName,
+      contactName,
+      contactEmail,
+      contactPhone,
+      notes,
+      createdAt: new Date().toISOString(),
+      used: false
+    });
   } catch (error) {
     console.error('Error adding invitation:', error);
     res.status(500).json({ error: 'Failed to add invitation' });
@@ -581,11 +626,12 @@ router.post('/admin/config/invitations', (req, res) => {
 /**
  * DELETE /api/admin/config/invitations/:id - Delete invitation
  */
-router.delete('/admin/config/invitations/:id', (req, res) => {
+router.delete('/admin/config/invitations/:id', async (req, res) => {
   try {
-    const config = configService.getConfig();
-    config.invitations = (config.invitations || []).filter(i => i.id !== req.params.id);
-    configService.updateConfig(config);
+    await sqlService.query(
+      'DELETE FROM invitations WHERE code = @code',
+      { code: req.params.id }
+    );
     res.json({ success: true });
   } catch (error) {
     console.error('Error deleting invitation:', error);
