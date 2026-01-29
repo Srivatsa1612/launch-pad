@@ -80,11 +80,11 @@ export const WizardProvider = ({ children }) => {
     }
   }, [sessionId, companyName, currentStep]);
 
-  const createSession = async (company) => {
+  const createSession = async (company, inviteCode) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await sessionAPI.create(company);
+      const response = await sessionAPI.create(company, inviteCode);
       setSessionId(response.data.sessionId);
       setCompanyName(company);
       setCurrentStep(1);

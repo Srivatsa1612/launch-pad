@@ -2,7 +2,6 @@
 const express = require('express');
 const { body, param, validationResult } = require('express-validator');
 const wizardService = require('../services/wizardService');
-const livyService = require('../services/livyService');
 const configService = require('../services/configService');
 const multer = require('multer');
 const path = require('path');
@@ -77,10 +76,37 @@ router.post('/admin/initialize-db', async (req, res) => {
 // Create new session
 router.post('/sessions',
   body('companyName').notEmpty().trim().escape(),
+  body('inviteCode').optional().isString().trim(),
   validate,
   async (req, res) => {
     try {
-      const { companyName } = req.body;
+      const { companyName, inviteCode } = req.body;
+      
+      // Require invitation code for session creation
+      if (!inviteCode) {
+        return res.status(403).json({ 
+          error: 'Invitation code required',
+          message: 'Session creation requires a valid invitation code'
+        });
+      }
+
+      // Validate invitation code exists
+      try {
+        const invitations = await configService.getInvitations();
+        const invitation = invitations.find(inv => inv.code === inviteCode);
+        if (!invitation) {
+          return res.status(403).json({ 
+            error: 'Invalid invitation',
+            message: 'The provided invitation code is invalid or has expired'
+          });
+        }
+      } catch (error) {
+        return res.status(500).json({ 
+          error: 'Validation error',
+          message: 'Could not validate invitation'
+        });
+      }
+
       const session = await wizardService.createSession(companyName);
       res.status(201).json(session);
     } catch (error) {

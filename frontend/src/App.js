@@ -25,6 +25,12 @@ const WizardContent = () => {
   const [loading, setLoading] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
+  // eslint-disable-next-line no-unused-vars
+  const [inviteCode, setInviteCode] = useState(null);
+  // eslint-disable-next-line no-unused-vars
+  const [isValidInvite, setIsValidInvite] = useState(false);
+  // eslint-disable-next-line no-unused-vars
+  const [inviteError, setInviteError] = useState('');
 
   // Show splash screen for 2 seconds on initial load
   useEffect(() => {
@@ -34,6 +40,33 @@ const WizardContent = () => {
     
     return () => clearTimeout(timer);
   }, []);
+
+  // Check URL for invite parameter and validate it
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('invite');
+    if (code) {
+      setInviteCode(code);
+      validateInviteCode(code);
+    }
+  }, []);
+
+  // Validate invite code
+  const validateInviteCode = async (code) => {
+    try {
+      const response = await fetch(`/api/admin/customer-profiles/${code}`);
+      if (response.ok) {
+        setIsValidInvite(true);
+        setInviteError('');
+      } else {
+        setIsValidInvite(false);
+        setInviteError('Invalid or expired invitation link');
+      }
+    } catch (error) {
+      setIsValidInvite(false);
+      setInviteError('Unable to validate invitation');
+    }
+  };
 
   // Check URL for dashboard route
   React.useEffect(() => {
@@ -81,7 +114,7 @@ const WizardContent = () => {
 
     try {
       setLoading(true);
-      await createSession(companyInput);
+      await createSession(companyInput, inviteCode);
     } catch (error) {
       alert('Failed to start wizard. Please try again.');
     } finally {
@@ -89,8 +122,89 @@ const WizardContent = () => {
     }
   };
 
-  // Show company name input if no session
-  if (!sessionId) {
+  // Show error for invalid/missing invite
+  if (!sessionId && !inviteCode) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 bg-dark-950">
+        <div className="max-w-md w-full">
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <svg className="w-12 h-12 text-primary-500" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" />
+              </svg>
+              <span className="text-3xl font-bold italic">FLOWCUSTODIAN</span>
+            </div>
+            <p className="text-xl text-dark-300 mb-2">Welcome Wizard</p>
+            <p className="text-sm text-dark-400">Concierge-Powered Workflow Co-Pilot</p>
+          </div>
+
+          <div className="card space-y-6 text-center">
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+              <p className="text-red-400 font-medium mb-2">Access Required</p>
+              <p className="text-sm text-dark-300">
+                To get started with flowCUSTODIAN, you'll need an invitation link from M-Theory.
+              </p>
+            </div>
+
+            <div>
+              <p className="text-dark-400 text-sm mb-4">
+                If you believe you should have access, please contact your M-Theory account team.
+              </p>
+              <a 
+                href="https://www.m-theorygrp.com/contact"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary-400 hover:underline text-sm"
+              >
+                Get in Touch →
+              </a>
+            </div>
+
+            <p className="text-xs text-dark-500">
+              © 2026 M-Theory. All rights reserved.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error for invalid invite
+  if (!sessionId && inviteCode && !isValidInvite) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 bg-dark-950">
+        <div className="max-w-md w-full">
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <svg className="w-12 h-12 text-primary-500" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" />
+              </svg>
+              <span className="text-3xl font-bold italic">FLOWCUSTODIAN</span>
+            </div>
+          </div>
+
+          <div className="card space-y-6 text-center">
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+              <p className="text-red-400 font-medium mb-2">Invalid Invitation</p>
+              <p className="text-sm text-dark-300">
+                {inviteError || 'This invitation link is invalid or has expired.'}
+              </p>
+            </div>
+
+            <a 
+              href="/"
+              className="text-primary-400 hover:underline text-sm"
+            >
+              Return Home
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show company name input if no session (but have valid invite)
+  if (!sessionId && inviteCode && isValidInvite) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4 bg-dark-950">
         <div className="max-w-md w-full">

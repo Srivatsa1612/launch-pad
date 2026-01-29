@@ -31,7 +31,7 @@ api.interceptors.response.use(
 );
 
 export const sessionAPI = {
-  create: (companyName) => api.post('/sessions', { companyName }),
+  create: (companyName, inviteCode) => api.post('/sessions', { companyName, inviteCode }),
   get: (sessionId) => api.get(`/sessions/${sessionId}`),
   complete: (sessionId) => api.post(`/sessions/${sessionId}/complete`),
 };
