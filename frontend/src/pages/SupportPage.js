@@ -1,24 +1,39 @@
 // pages/SupportPage.js - Placeholder for Step 6
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useWizard } from '../context/WizardContext';
-import { supportAPI } from '../services/api';
-import { ArrowLeftIcon, ArrowRightIcon, CheckIcon } from '@heroicons/react/24/solid';
+import { supportAPI, configAPI } from '../services/api';
+import { ArrowLeftIcon, ArrowRightIcon } from '@heroicons/react/24/solid';
 
 const SupportPage = () => {
   const { sessionId, nextStep, previousStep } = useWizard();
   const [loading, setLoading] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
+  const [concierge, setConcierge] = useState(null);
+
+  useEffect(() => {
+    const loadConcierge = async () => {
+      try {
+        const response = await configAPI.getConcierges();
+        if (response.data && response.data.length > 0) {
+          setConcierge(response.data[0]); // Use first concierge as default
+        }
+      } catch (error) {
+        console.error('Error loading concierge:', error);
+      }
+    };
+    loadConcierge();
+  }, []);
 
   const handleSave = async () => {
     try {
       setLoading(true);
       await supportAPI.save(sessionId, {
-        conciergeName: 'Julian Sterling',
-        conciergeEmail: 'jsterling@flowcustodian.com',
-        conciergePhone: '+1 (555) 012-3456',
-        leadershipName: 'Elena Vance',
-        leadershipTitle: 'VP of Customer Success',
-        leadershipEmail: 'evance@flowcustodian.com',
+        conciergeName: concierge?.name || 'Not Assigned',
+        conciergeEmail: concierge?.email || '',
+        conciergePhone: concierge?.phone || '',
+        defaultTicketSeverity: 'medium',
+        primaryContactChannel: 'teams',
+        afterHoursSupport: true,
         supportProcedureAcknowledged: acknowledged
       });
       nextStep();
@@ -35,12 +50,14 @@ const SupportPage = () => {
 
       <div className="grid md:grid-cols-2 gap-6">
         <div className="card">
-          <div className="w-16 h-16 rounded-full bg-primary-600 flex items-center justify-center text-2xl font-bold mb-4">JS</div>
-          <h3 className="text-xl font-semibold mb-2">Julian Sterling</h3>
+          <div className="w-16 h-16 rounded-full bg-primary-600 flex items-center justify-center text-2xl font-bold mb-4">
+            {concierge ? concierge.name.split(' ').map(n => n[0]).join('') : '?'}
+          </div>
+          <h3 className="text-xl font-semibold mb-2">{concierge?.name || 'Loading...'}</h3>
           <p className="text-primary-400 mb-4">Your Dedicated Concierge</p>
           <div className="space-y-2 text-sm text-dark-300">
-            <p>📧 jsterling@flowcustodian.com</p>
-            <p>📞 +1 (555) 012-3456</p>
+            <p>📧 {concierge?.email || 'Loading...'}</p>
+            <p>📞 {concierge?.phone || 'Loading...'}</p>
             <button className="btn-primary mt-4 w-full">Schedule Kickoff Call</button>
           </div>
         </div>

@@ -1,13 +1,14 @@
 // pages/ServiceOrderPage.js
 import React, { useState, useEffect } from 'react';
 import { useWizard } from '../context/WizardContext';
-import { serviceOrderAPI } from '../services/api';
+import { serviceOrderAPI, configAPI } from '../services/api';
 import { ArrowLeftIcon, ArrowRightIcon, CheckIcon } from '@heroicons/react/24/solid';
 
 const ServiceOrderPage = () => {
   const { sessionId, nextStep, previousStep } = useWizard();
   const [loading, setLoading] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [serviceTiers, setServiceTiers] = useState([]);
   const [order, setOrder] = useState({
     serviceTier: 'Enterprise Elite',
     startDate: '2026-02-01',
@@ -18,20 +19,36 @@ const ServiceOrderPage = () => {
   });
 
   useEffect(() => {
-    const loadOrder = async () => {
+    const loadData = async () => {
       try {
-        const response = await serviceOrderAPI.get(sessionId);
-        if (response.data && Object.keys(response.data).length > 0) {
-          setOrder(response.data);
-          setConfirmed(response.data.confirmationAccepted);
+        // Load service tiers from config
+        const tiersResponse = await configAPI.getServiceTiers();
+        setServiceTiers(tiersResponse.data);
+
+        // Load saved order if exists
+        const orderResponse = await serviceOrderAPI.get(sessionId);
+        if (orderResponse.data && Object.keys(orderResponse.data).length > 0) {
+          setOrder(orderResponse.data);
+          setConfirmed(orderResponse.data.confirmationAccepted);
+        } else {
+          // Set default to recommended tier
+          const recommended = tiersResponse.data.find(t => t.recommended);
+          if (recommended) {
+            setOrder(prev => ({
+              ...prev,
+              serviceTier: recommended.name,
+              monthlyCommitment: recommended.monthlyPrice,
+              includedFeatures: recommended.features
+            }));
+          }
         }
       } catch (error) {
-        console.error('Error loading service order:', error);
+        console.error('Error loading data:', error);
       }
     };
 
     if (sessionId) {
-      loadOrder();
+      loadData();
     }
   }, [sessionId]);
 

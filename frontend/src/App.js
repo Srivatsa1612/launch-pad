@@ -10,6 +10,11 @@ import HardwarePage from './pages/HardwarePage';
 import SupportPage from './pages/SupportPage';
 import CompletionPage from './pages/CompletionPage';
 import DashboardPage from './pages/DashboardPage';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import ConciergeManagement from './pages/admin/ConciergeManagement';
+import ServiceTierManagement from './pages/admin/ServiceTierManagement';
+import HRISManagement from './pages/admin/HRISManagement';
+import HardwareManagement from './pages/admin/HardwareManagement';
 
 const WizardContent = () => {
   const { currentStep, sessionId, createSession } = useWizard();
@@ -23,6 +28,23 @@ const WizardContent = () => {
       setShowDashboard(true);
     }
   }, []);
+
+  // Admin routes
+  if (window.location.pathname.startsWith('/admin')) {
+    if (window.location.pathname === '/admin/concierges') {
+      return <ConciergeManagement />;
+    }
+    if (window.location.pathname === '/admin/service-tiers') {
+      return <ServiceTierManagement />;
+    }
+    if (window.location.pathname === '/admin/hris') {
+      return <HRISManagement />;
+    }
+    if (window.location.pathname === '/admin/hardware') {
+      return <HardwareManagement />;
+    }
+    return <AdminDashboard />;
+  }
 
   // Show dashboard if requested
   if (showDashboard || window.location.pathname === '/dashboard') {

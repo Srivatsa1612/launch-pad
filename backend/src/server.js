@@ -8,6 +8,7 @@ const config = require('./config');
 const routes = require('./routes');
 const livyService = require('./services/livyService');
 const authService = require('./services/authService');
+const configService = require('./services/configService');
 
 const app = express();
 
@@ -48,6 +49,11 @@ async function initializeDatabase() {
   try {
     console.log('Initializing database schema...');
     await livyService.initializeSchema();
+    
+    // Initialize wizard configuration
+    console.log('Initializing wizard configuration...');
+    configService.getConfig(); // This will create the default config file if it doesn't exist
+    console.log('✓ Wizard configuration ready');
     console.log('Database schema initialized successfully');
   } catch (error) {
     console.error('Failed to initialize database:', error);

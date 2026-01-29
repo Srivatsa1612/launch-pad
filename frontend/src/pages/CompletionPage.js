@@ -1,10 +1,26 @@
 // pages/CompletionPage.js
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useWizard } from '../context/WizardContext';
+import { configAPI } from '../services/api';
 import { CheckCircleIcon, CalendarIcon } from '@heroicons/react/24/solid';
 
 const CompletionPage = () => {
   const { companyName, completeWizard } = useWizard();
+  const [concierge, setConcierge] = useState(null);
+
+  useEffect(() => {
+    const loadConcierge = async () => {
+      try {
+        const response = await configAPI.getConcierges();
+        if (response.data && response.data.length > 0) {
+          setConcierge(response.data[0]);
+        }
+      } catch (error) {
+        console.error('Error loading concierge:', error);
+      }
+    };
+    loadConcierge();
+  }, []);
 
   useEffect(() => {
     // Mark wizard as complete
@@ -34,7 +50,7 @@ const CompletionPage = () => {
               1
             </div>
             <div>
-              <p className="font-medium mb-1">Your concierge <span className="text-primary-400">Julian Sterling</span> will reach out within 24 hours to schedule your kickoff call.</p>
+              <p className="font-medium mb-1">Your concierge <span className="text-primary-400">{concierge?.name || 'our team'}</span> will reach out within 24 hours to schedule your kickoff call.</p>
             </div>
           </div>
 
@@ -68,7 +84,7 @@ const CompletionPage = () => {
           <button 
             onClick={() => {
               const event = {
-                title: 'flowCUSTODIAN Kickoff Call with Julian Sterling',
+                title: `flowCUSTODIAN Kickoff Call with ${concierge?.name || 'Team'}`,
                 description: 'Kickoff call to discuss your flowCUSTODIAN implementation',
                 start: new Date(Date.now() + 86400000).toISOString().split('T')[0], // Tomorrow
                 duration: 60

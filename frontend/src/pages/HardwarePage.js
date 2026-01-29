@@ -1,15 +1,28 @@
 // pages/HardwarePage.js - Placeholder for Step 5
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useWizard } from '../context/WizardContext';
-import { hardwareAPI } from '../services/api';
+import { hardwareAPI, configAPI } from '../services/api';
 import { ArrowLeftIcon, ArrowRightIcon } from '@heroicons/react/24/solid';
 
 const HardwarePage = () => {
   const { sessionId, nextStep, previousStep } = useWizard();
   const [loading, setLoading] = useState(false);
   const [procurement, setProcurement] = useState('custom');
-  const [requirements, setRequirements] = useState('DELL 32GB');
-  const [gift, setGift] = useState('coffee_sampler');
+  const [requirements, setRequirements] = useState('');
+  const [gift, setGift] = useState('standard');
+  const [hardwareOptions, setHardwareOptions] = useState({ deviceProcurement: [], welcomeGifts: [] });
+
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const response = await configAPI.getAll();
+        setHardwareOptions(response.data.hardwareOptions || { deviceProcurement: [], welcomeGifts: [] });
+      } catch (error) {
+        console.error('Error loading hardware config:', error);
+      }
+    };
+    loadConfig();
+  }, []);
 
   const handleSave = async () => {
     try {
@@ -35,31 +48,50 @@ const HardwarePage = () => {
         <div className="card">
           <h3 className="text-xl font-semibold mb-4">Device Procurement</h3>
           <div className="space-y-3">
-            <label className="flex items-center gap-3">
-              <input type="radio" name="procurement" value="standard" checked={procurement === 'standard'} onChange={(e) => setProcurement(e.target.value)} />
-              <span>Yes — please coordinate standard laptop / setup</span>
-            </label>
-            <label className="flex items-center gap-3">
-              <input type="radio" name="procurement" value="custom" checked={procurement === 'custom'} onChange={(e) => setProcurement(e.target.value)} />
-              <span>Yes — custom requirements</span>
-            </label>
-            <label className="flex items-center gap-3">
-              <input type="radio" name="procurement" value="internal" checked={procurement === 'internal'} onChange={(e) => setProcurement(e.target.value)} />
-              <span>No — our team handles internally</span>
-            </label>
+            {hardwareOptions.deviceProcurement.map(option => (
+              <label key={option.id} className="flex items-start gap-3">
+                <input 
+                  type="radio" 
+                  name="procurement" 
+                  value={option.id} 
+                  checked={procurement === option.id} 
+                  onChange={(e) => setProcurement(e.target.value)} 
+                  className="mt-1"
+                />
+                <div>
+                  <span className="font-medium">{option.name}</span>
+                  <p className="text-sm text-dark-400">{option.description}</p>
+                </div>
+              </label>
+            ))}
           </div>
           {procurement === 'custom' && (
-            <textarea value={requirements} onChange={(e) => setRequirements(e.target.value)} className="input-field mt-4" rows="3" />
+            <textarea 
+              value={requirements} 
+              onChange={(e) => setRequirements(e.target.value)} 
+              className="input-field mt-4" 
+              rows="3"
+              placeholder="Specify your custom hardware requirements..."
+            />
           )}
         </div>
 
         <div className="card">
           <h3 className="text-xl font-semibold mb-4">Welcome Gift</h3>
           <div className="grid grid-cols-2 gap-4">
-            {['Coffee / Tea Sampler', 'Leather Notebook Set', '$50 Charity Donation', 'Wireless Charger'].map((item, idx) => (
-              <label key={idx} className="card cursor-pointer hover:border-primary-500 transition-all">
-                <input type="radio" name="gift" value={item.toLowerCase().replace(/ /g, '_')} checked={gift === item.toLowerCase().replace(/ /g, '_')} onChange={(e) => setGift(e.target.value)} />
-                <span className="ml-3">{item}</span>
+            {hardwareOptions.welcomeGifts.map(giftOption => (
+              <label key={giftOption.id} className="card cursor-pointer hover:border-primary-500 transition-all">
+                <input 
+                  type="radio" 
+                  name="gift" 
+                  value={giftOption.id} 
+                  checked={gift === giftOption.id} 
+                  onChange={(e) => setGift(e.target.value)} 
+                />
+                <div className="ml-3">
+                  <span className="font-medium">{giftOption.name}</span>
+                  <p className="text-xs text-dark-400 mt-1">{giftOption.description}</p>
+                </div>
               </label>
             ))}
           </div>

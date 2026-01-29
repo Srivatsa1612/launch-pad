@@ -1,7 +1,7 @@
 // pages/HRSetupPage.js - Placeholder for Step 4
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useWizard } from '../context/WizardContext';
-import { hrSetupAPI } from '../services/api';
+import { hrSetupAPI, configAPI } from '../services/api';
 import { ArrowLeftIcon, ArrowRightIcon, CloudArrowUpIcon } from '@heroicons/react/24/solid';
 
 const HRSetupPage = () => {
@@ -10,6 +10,21 @@ const HRSetupPage = () => {
   const [hrisSystem, setHrisSystem] = useState('');
   const [updateMethod, setUpdateMethod] = useState('');
   const [file, setFile] = useState(null);
+  const [hrisSystems, setHrisSystems] = useState([]);
+  const [updateMethods, setUpdateMethods] = useState([]);
+
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const response = await configAPI.getAll();
+        setHrisSystems(response.data.hrisSystems || []);
+        setUpdateMethods(response.data.updateMethods || []);
+      } catch (error) {
+        console.error('Error loading HR config:', error);
+      }
+    };
+    loadConfig();
+  }, []);
 
   const handleSave = async () => {
     try {
@@ -48,10 +63,9 @@ const HRSetupPage = () => {
           <label className="block text-sm font-medium mb-3">HRIS / HR System in use</label>
           <select value={hrisSystem} onChange={(e) => setHrisSystem(e.target.value)} className="input-field">
             <option value="">Select System</option>
-            <option value="Workday">Workday</option>
-            <option value="BambooHR">BambooHR</option>
-            <option value="ADP">ADP</option>
-            <option value="Other">Other</option>
+            {hrisSystems.map(system => (
+              <option key={system.id} value={system.name}>{system.name}</option>
+            ))}
           </select>
         </div>
 
@@ -59,9 +73,9 @@ const HRSetupPage = () => {
           <label className="block text-sm font-medium mb-3">Update Method</label>
           <select value={updateMethod} onChange={(e) => setUpdateMethod(e.target.value)} className="input-field">
             <option value="">Select Method</option>
-            <option value="API">API Integration</option>
-            <option value="CSV">CSV Upload</option>
-            <option value="Manual">Manual</option>
+            {updateMethods.map(method => (
+              <option key={method.id} value={method.name}>{method.name}</option>
+            ))}
           </select>
         </div>
 

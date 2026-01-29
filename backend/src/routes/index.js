@@ -3,6 +3,7 @@ const express = require('express');
 const { body, param, validationResult } = require('express-validator');
 const wizardService = require('../services/wizardService');
 const livyService = require('../services/livyService');
+const configService = require('../services/configService');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -346,5 +347,190 @@ router.get('/support/:sessionId',
     }
   }
 );
+// ==================== Configuration Endpoints ====================
+
+/**
+ * GET /api/config - Get all wizard configuration
+ */
+router.get('/config', (req, res) => {
+  try {
+    const config = configService.getConfig();
+    res.json(config);
+  } catch (error) {
+    console.error('Error getting configuration:', error);
+    res.status(500).json({ error: 'Failed to retrieve configuration' });
+  }
+});
+
+/**
+ * GET /api/config/concierges - Get available concierges
+ */
+router.get('/config/concierges', (req, res) => {
+  try {
+    const concierges = configService.getConcierges();
+    res.json(concierges);
+  } catch (error) {
+    console.error('Error getting concierges:', error);
+    res.status(500).json({ error: 'Failed to retrieve concierges' });
+  }
+});
+
+/**
+ * GET /api/config/service-tiers - Get available service tiers
+ */
+router.get('/config/service-tiers', (req, res) => {
+  try {
+    const serviceTiers = configService.getServiceTiers();
+    res.json(serviceTiers);
+  } catch (error) {
+    console.error('Error getting service tiers:', error);
+    res.status(500).json({ error: 'Failed to retrieve service tiers' });
+  }
+});
+
+// ==================== Admin Configuration Management ====================
+
+/**
+ * POST /api/admin/config/concierges - Add new concierge
+ */
+router.post('/admin/config/concierges', (req, res) => {
+  try {
+    const config = configService.getConfig();
+    const newConcierge = {
+      id: req.body.id || req.body.name.toLowerCase().replace(/\s+/g, '-'),
+      name: req.body.name,
+      email: req.body.email,
+      phone: req.body.phone,
+      avatar: req.body.avatar || null,
+      specialties: req.body.specialties || []
+    };
+    config.concierges.push(newConcierge);
+    configService.updateConfig(config);
+    res.json(newConcierge);
+  } catch (error) {
+    console.error('Error adding concierge:', error);
+    res.status(500).json({ error: 'Failed to add concierge' });
+  }
+});
+
+/**
+ * PUT /api/admin/config/concierges/:id - Update concierge
+ */
+router.put('/admin/config/concierges/:id', (req, res) => {
+  try {
+    const config = configService.getConfig();
+    const index = config.concierges.findIndex(c => c.id === req.params.id);
+    if (index === -1) {
+      return res.status(404).json({ error: 'Concierge not found' });
+    }
+    config.concierges[index] = { ...config.concierges[index], ...req.body };
+    configService.updateConfig(config);
+    res.json(config.concierges[index]);
+  } catch (error) {
+    console.error('Error updating concierge:', error);
+    res.status(500).json({ error: 'Failed to update concierge' });
+  }
+});
+
+/**
+ * DELETE /api/admin/config/concierges/:id - Delete concierge
+ */
+router.delete('/admin/config/concierges/:id', (req, res) => {
+  try {
+    const config = configService.getConfig();
+    config.concierges = config.concierges.filter(c => c.id !== req.params.id);
+    configService.updateConfig(config);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting concierge:', error);
+    res.status(500).json({ error: 'Failed to delete concierge' });
+  }
+});
+
+/**
+ * POST /api/admin/config/service-tiers - Add service tier
+ */
+router.post('/admin/config/service-tiers', (req, res) => {
+  try {
+    const config = configService.getConfig();
+    const newTier = {
+      id: req.body.id || req.body.name.toLowerCase().replace(/\s+/g, '-'),
+      name: req.body.name,
+      monthlyPrice: req.body.monthlyPrice,
+      features: req.body.features || [],
+      recommended: req.body.recommended || false
+    };
+    config.serviceTiers.push(newTier);
+    configService.updateConfig(config);
+    res.json(newTier);
+  } catch (error) {
+    console.error('Error adding service tier:', error);
+    res.status(500).json({ error: 'Failed to add service tier' });
+  }
+});
+
+/**
+ * PUT /api/admin/config/service-tiers/:id - Update service tier
+ */
+router.put('/admin/config/service-tiers/:id', (req, res) => {
+  try {
+    const config = configService.getConfig();
+    const index = config.serviceTiers.findIndex(t => t.id === req.params.id);
+    if (index === -1) {
+      return res.status(404).json({ error: 'Service tier not found' });
+    }
+    config.serviceTiers[index] = { ...config.serviceTiers[index], ...req.body };
+    configService.updateConfig(config);
+    res.json(config.serviceTiers[index]);
+  } catch (error) {
+    console.error('Error updating service tier:', error);
+    res.status(500).json({ error: 'Failed to update service tier' });
+  }
+});
+
+/**
+ * DELETE /api/admin/config/service-tiers/:id - Delete service tier
+ */
+router.delete('/admin/config/service-tiers/:id', (req, res) => {
+  try {
+    const config = configService.getConfig();
+    config.serviceTiers = config.serviceTiers.filter(t => t.id !== req.params.id);
+    configService.updateConfig(config);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting service tier:', error);
+    res.status(500).json({ error: 'Failed to delete service tier' });
+  }
+});
+
+/**
+ * PUT /api/admin/config/hris-systems - Update HRIS systems list
+ */
+router.put('/admin/config/hris-systems', (req, res) => {
+  try {
+    const config = configService.getConfig();
+    config.hrisSystems = req.body;
+    configService.updateConfig(config);
+    res.json(config.hrisSystems);
+  } catch (error) {
+    console.error('Error updating HRIS systems:', error);
+    res.status(500).json({ error: 'Failed to update HRIS systems' });
+  }
+});
+
+/**
+ * PUT /api/admin/config/hardware-options - Update hardware options
+ */
+router.put('/admin/config/hardware-options', (req, res) => {
+  try {
+    const config = configService.getConfig();
+    config.hardwareOptions = req.body;
+    configService.updateConfig(config);
+    res.json(config.hardwareOptions);
+  } catch (error) {
+    console.error('Error updating hardware options:', error);
+    res.status(500).json({ error: 'Failed to update hardware options' });
+  }
+});
 
 module.exports = router;

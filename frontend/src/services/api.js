@@ -70,4 +70,26 @@ export const supportAPI = {
   get: (sessionId) => api.get(`/support/${sessionId}`),
 };
 
+export const configAPI = {
+  getAll: () => api.get('/config'),
+  getConcierges: () => api.get('/config/concierges'),
+  getServiceTiers: () => api.get('/config/service-tiers')
+};
+
+export const adminAPI = {
+  // Concierges
+  addConcierge: (data) => api.post('/admin/config/concierges', data),
+  updateConcierge: (id, data) => api.put(`/admin/config/concierges/${id}`, data),
+  deleteConcierge: (id) => api.delete(`/admin/config/concierges/${id}`),
+  
+  // Service Tiers
+  addServiceTier: (data) => api.post('/admin/config/service-tiers', data),
+  updateServiceTier: (id, data) => api.put(`/admin/config/service-tiers/${id}`, data),
+  deleteServiceTier: (id) => api.delete(`/admin/config/service-tiers/${id}`),
+  
+  // HRIS & Hardware
+  updateHRISSystems: (data) => api.put('/admin/config/hris-systems', data),
+  updateHardwareOptions: (data) => api.put('/admin/config/hardware-options', data)
+};
+
 export default api;
