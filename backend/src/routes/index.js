@@ -352,7 +352,7 @@ router.get('/support/:sessionId',
 /**
  * GET /api/config - Get all wizard configuration
  */
-router.get('/config', (req, res) => {
+router.get('/config', async (req, res) => {
   try {
     const config = configService.getConfig();
     res.json(config);
@@ -365,9 +365,9 @@ router.get('/config', (req, res) => {
 /**
  * GET /api/config/concierges - Get available concierges
  */
-router.get('/config/concierges', (req, res) => {
+router.get('/config/concierges', async (req, res) => {
   try {
-    const concierges = configService.getConcierges();
+    const concierges = await configService.getConcierges();
     res.json(concierges);
   } catch (error) {
     console.error('Error getting concierges:', error);
@@ -378,9 +378,9 @@ router.get('/config/concierges', (req, res) => {
 /**
  * GET /api/config/service-tiers - Get available service tiers
  */
-router.get('/config/service-tiers', (req, res) => {
+router.get('/config/service-tiers', async (req, res) => {
   try {
-    const serviceTiers = configService.getServiceTiers();
+    const serviceTiers = await configService.getServiceTiers();
     res.json(serviceTiers);
   } catch (error) {
     console.error('Error getting service tiers:', error);
@@ -574,23 +574,45 @@ router.delete('/admin/config/invitations/:id', (req, res) => {
 /**
  * POST /api/admin/customer-profiles - Save complete customer profile
  */
-router.post('/admin/customer-profiles', (req, res) => {
+router.post('/admin/customer-profiles', async (req, res) => {
   try {
     const profile = req.body;
     if (!profile.code) {
       return res.status(400).json({ error: 'Profile code is required' });
     }
 
-    const config = configService.getConfig();
-    if (!config.customerProfiles) {
-      config.customerProfiles = [];
+    const sqlService = require('../services/sqlService');
+    await sqlService.ensureConnection();
+
+    // Check if invitation already exists
+    const existing = await sqlService.query(
+      'SELECT id FROM invitations WHERE code = @code',
+      { code: profile.code }
+    );
+
+    if (existing && existing.length > 0) {
+      // Update existing invitation
+      await sqlService.query(`
+        UPDATE invitations
+        SET customer_profile = @profile, updated_at = @updatedAt
+        WHERE code = @code
+      `, {
+        code: profile.code,
+        profile: JSON.stringify(profile),
+        updatedAt: new Date()
+      });
+    } else {
+      // Insert new invitation
+      await sqlService.query(`
+        INSERT INTO invitations (code, customer_profile, used, created_at)
+        VALUES (@code, @profile, 0, @createdAt)
+      `, {
+        code: profile.code,
+        profile: JSON.stringify(profile),
+        createdAt: new Date()
+      });
     }
 
-    // Remove if exists, then add (update or create)
-    config.customerProfiles = config.customerProfiles.filter(p => p.code !== profile.code);
-    config.customerProfiles.push(profile);
-    
-    configService.updateConfig(config);
     res.status(201).json(profile);
   } catch (error) {
     console.error('Error saving customer profile:', error);
@@ -601,10 +623,9 @@ router.post('/admin/customer-profiles', (req, res) => {
 /**
  * GET /api/admin/customer-profiles - Get all customer profiles
  */
-router.get('/admin/customer-profiles', (req, res) => {
+router.get('/admin/customer-profiles', async (req, res) => {
   try {
-    const config = configService.getConfig();
-    const profiles = config.customerProfiles || [];
+    const profiles = await configService.getInvitations();
     res.json(profiles);
   } catch (error) {
     console.error('Error fetching profiles:', error);
@@ -615,17 +636,29 @@ router.get('/admin/customer-profiles', (req, res) => {
 /**
  * GET /api/admin/customer-profiles/:code - Get profile by invitation code
  */
-router.get('/admin/customer-profiles/:code', (req, res) => {
+router.get('/admin/customer-profiles/:code', async (req, res) => {
   try {
-    const config = configService.getConfig();
-    const profiles = config.customerProfiles || [];
-    const profile = profiles.find(p => p.code === req.params.code);
-    
-    if (!profile) {
+    const sqlService = require('../services/sqlService');
+    await sqlService.ensureConnection();
+
+    const result = await sqlService.query(
+      'SELECT * FROM invitations WHERE code = @code',
+      { code: req.params.code }
+    );
+
+    if (!result || result.length === 0) {
       return res.status(404).json({ error: 'Profile not found' });
     }
 
-    res.json(profile);
+    const invitation = result[0];
+    const profile = invitation.customer_profile ? JSON.parse(invitation.customer_profile) : {};
+
+    res.json({
+      ...profile,
+      used: invitation.used,
+      usedAt: invitation.used_at,
+      createdAt: invitation.created_at
+    });
   } catch (error) {
     console.error('Error fetching profile:', error);
     res.status(500).json({ error: 'Failed to fetch profile' });
@@ -635,21 +668,34 @@ router.get('/admin/customer-profiles/:code', (req, res) => {
 /**
  * PUT /api/admin/customer-profiles/:code - Update customer profile
  */
-router.put('/admin/customer-profiles/:code', (req, res) => {
+router.put('/admin/customer-profiles/:code', async (req, res) => {
   try {
-    const config = configService.getConfig();
-    if (!config.customerProfiles) {
-      config.customerProfiles = [];
-    }
+    const sqlService = require('../services/sqlService');
+    await sqlService.ensureConnection();
 
-    const index = config.customerProfiles.findIndex(p => p.code === req.params.code);
-    if (index === -1) {
+    const existing = await sqlService.query(
+      'SELECT * FROM invitations WHERE code = @code',
+      { code: req.params.code }
+    );
+
+    if (!existing || existing.length === 0) {
       return res.status(404).json({ error: 'Profile not found' });
     }
 
-    config.customerProfiles[index] = { ...config.customerProfiles[index], ...req.body };
-    configService.updateConfig(config);
-    res.json(config.customerProfiles[index]);
+    const currentProfile = existing[0].customer_profile ? JSON.parse(existing[0].customer_profile) : {};
+    const updatedProfile = { ...currentProfile, ...req.body };
+
+    await sqlService.query(`
+      UPDATE invitations
+      SET customer_profile = @profile, updated_at = @updatedAt
+      WHERE code = @code
+    `, {
+      code: req.params.code,
+      profile: JSON.stringify(updatedProfile),
+      updatedAt: new Date()
+    });
+
+    res.json(updatedProfile);
   } catch (error) {
     console.error('Error updating profile:', error);
     res.status(500).json({ error: 'Failed to update profile' });
@@ -659,11 +705,16 @@ router.put('/admin/customer-profiles/:code', (req, res) => {
 /**
  * DELETE /api/admin/customer-profiles/:code - Delete customer profile
  */
-router.delete('/admin/customer-profiles/:code', (req, res) => {
+router.delete('/admin/customer-profiles/:code', async (req, res) => {
   try {
-    const config = configService.getConfig();
-    config.customerProfiles = (config.customerProfiles || []).filter(p => p.code !== req.params.code);
-    configService.updateConfig(config);
+    const sqlService = require('../services/sqlService');
+    await sqlService.ensureConnection();
+
+    await sqlService.query(
+      'DELETE FROM invitations WHERE code = @code',
+      { code: req.params.code }
+    );
+
     res.json({ success: true });
   } catch (error) {
     console.error('Error deleting profile:', error);

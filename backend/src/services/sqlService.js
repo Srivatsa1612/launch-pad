@@ -81,10 +81,13 @@ class SQLService {
   }
 
   getPool() {
-    if (!this.pool) {
-      throw new Error('Database pool not initialized. Call connect() first.');
-    }
     return this.pool;
+  }
+
+  async ensureConnection() {
+    if (!this.pool) {
+      await this.connect();
+    }
   }
 }
 

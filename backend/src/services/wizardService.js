@@ -1,6 +1,6 @@
 // services/wizardService.js
 const { v4: uuidv4 } = require('uuid');
-const livyService = require('./livyService');
+const dbService = require('./wizardDatabaseService');
 
 class WizardService {
   /**
@@ -9,16 +9,10 @@ class WizardService {
   async createSession(companyName) {
     try {
       const sessionId = uuidv4();
-      const now = new Date();
 
-      await livyService.insert('wizard_sessions', {
+      await dbService.createSession({
         session_id: sessionId,
-        company_name: companyName,
-        created_at: now,
-        updated_at: now,
-        completed_at: null,
-        current_step: 1,
-        status: 'in_progress'
+        company_name: companyName
       });
 
       return { sessionId, companyName, currentStep: 1 };
@@ -32,195 +26,106 @@ class WizardService {
    * Get session by ID
    */
   async getSession(sessionId) {
-    const sessions = await livyService.select(
-      'wizard_sessions',
-      '*',
-      `session_id = '${sessionId}'`
-    );
+    const session = await dbService.getSession(sessionId);
 
-    if (!sessions || sessions.length === 0) {
+    if (!session) {
       throw new Error('Session not found');
     }
 
-    return sessions[0];
+    return session;
   }
 
   /**
    * Update session progress
    */
   async updateSessionProgress(sessionId, currentStep) {
-    await livyService.update(
-      'wizard_sessions',
-      {
-        current_step: currentStep,
-        updated_at: new Date()
-      },
-      `session_id = '${sessionId}'`
-    );
+    await dbService.updateSession(sessionId, {
+      current_step: currentStep
+    });
   }
 
   /**
    * Mark session as complete
    */
   async completeSession(sessionId) {
-    await livyService.update(
-      'wizard_sessions',
-      {
-        status: 'completed',
-        completed_at: new Date(),
-        updated_at: new Date()
-      },
-      `session_id = '${sessionId}'`
-    );
+    await dbService.updateSession(sessionId, {
+      status: 'completed'
+    });
   }
 
   /**
    * Save key contacts
    */
   async saveContacts(sessionId, contacts) {
-    const contactId = uuidv4();
-    const now = new Date();
+    // Convert contacts object to array format
+    const contactsArray = Object.entries(contacts).map(([role, data]) => ({
+      role,
+      name: data.name,
+      email: data.email,
+      phone: data.phone || ''
+    }));
 
-    // Check if contacts already exist
-    const existing = await livyService.select(
-      'key_contacts',
-      '*',
-      `session_id = '${sessionId}'`
-    );
-
-    if (existing && existing.length > 0) {
-      // Update existing
-      await livyService.update(
-        'key_contacts',
-        {
-          billing_name: contacts.billing.name,
-          billing_email: contacts.billing.email,
-          billing_phone: contacts.billing.phone,
-          tech_name: contacts.tech.name,
-          tech_email: contacts.tech.email,
-          tech_phone: contacts.tech.phone,
-          emergency_name: contacts.emergency.name,
-          emergency_email: contacts.emergency.email,
-          emergency_phone: contacts.emergency.phone,
-          updated_at: now
-        },
-        `session_id = '${sessionId}'`
-      );
-    } else {
-      // Insert new
-      await livyService.insert('key_contacts', {
-        contact_id: contactId,
-        session_id: sessionId,
-        billing_name: contacts.billing.name,
-        billing_email: contacts.billing.email,
-        billing_phone: contacts.billing.phone,
-        tech_name: contacts.tech.name,
-        tech_email: contacts.tech.email,
-        tech_phone: contacts.tech.phone,
-        emergency_name: contacts.emergency.name,
-        emergency_email: contacts.emergency.email,
-        emergency_phone: contacts.emergency.phone,
-        created_at: now,
-        updated_at: now
-      });
-    }
-
+    await dbService.saveKeyContacts(sessionId, contactsArray);
     await this.updateSessionProgress(sessionId, 3);
+    return { success: true, contacts };
   }
 
   /**
    * Get contacts for session
    */
   async getContacts(sessionId) {
-    const contacts = await livyService.select(
-      'key_contacts',
-      '*',
-      `session_id = '${sessionId}'`
-    );
+    const contactsArray = await dbService.getKeyContacts(sessionId);
 
-    if (!contacts || contacts.length === 0) {
+    if (!contactsArray || contactsArray.length === 0) {
       return null;
     }
 
-    const data = contacts[0];
-    return {
-      billing: {
-        name: data.billing_name,
-        email: data.billing_email,
-        phone: data.billing_phone
-      },
-      tech: {
-        name: data.tech_name,
-        email: data.tech_email,
-        phone: data.tech_phone
-      },
-      emergency: {
-        name: data.emergency_name,
-        email: data.emergency_email,
-        phone: data.emergency_phone
-      }
-    };
+    // Convert array back to object format
+    const contacts = {};
+    contactsArray.forEach(contact => {
+      contacts[contact.role] = {
+        name: contact.name,
+        email: contact.email,
+        phone: contact.phone
+      };
+    });
+
+    return contacts;
   }
 
   /**
    * Save service order
    */
   async saveServiceOrder(sessionId, order) {
-    const orderId = uuidv4();
-    const now = new Date();
-
-    const existing = await livyService.select(
-      'service_orders',
-      '*',
-      `session_id = '${sessionId}'`
-    );
-
-    const orderData = {
-      service_tier: order.serviceTier,
-      start_date: new Date(order.startDate),
-      contract_term: order.contractTerm,
-      monthly_commitment: order.monthlyCommitment,
-      included_features: JSON.stringify(order.includedFeatures),
-      confirmation_accepted: order.confirmationAccepted,
-      updated_at: now
-    };
-
-    if (existing && existing.length > 0) {
-      await livyService.update('service_orders', orderData, `session_id = '${sessionId}'`);
-    } else {
-      await livyService.insert('service_orders', {
-        order_id: orderId,
-        session_id: sessionId,
-        ...orderData,
-        created_at: now
-      });
-    }
+    await dbService.saveServiceOrder(sessionId, {
+      concierge_id: order.concierge_id || order.conciergeId,
+      tier_id: order.tier_id || order.tierId || order.serviceTier,
+      user_count: order.user_count || order.userCount,
+      start_date: order.start_date || order.startDate,
+      special_requirements: order.special_requirements || order.specialRequirements
+    });
 
     await this.updateSessionProgress(sessionId, 4);
+    return { success: true };
   }
 
   /**
    * Get service order
    */
   async getServiceOrder(sessionId) {
-    const orders = await livyService.select(
-      'service_orders',
-      '*',
-      `session_id = '${sessionId}'`
-    );
+    const order = await dbService.getServiceOrder(sessionId);
 
-    if (!orders || orders.length === 0) {
+    if (!order) {
       return null;
     }
 
-    const data = orders[0];
     return {
-      serviceTier: data.service_tier,
-      startDate: data.start_date,
-      contractTerm: data.contract_term,
-      monthlyCommitment: data.monthly_commitment,
-      includedFeatures: JSON.parse(data.included_features),
-      confirmationAccepted: data.confirmation_accepted
+      conciergeId: order.concierge_id,
+      tierId: order.tier_id,
+      serviceTier: order.tier_id,
+      userCount: order.user_count,
+      startDate: order.start_date,
+      specialRequirements: order.special_requirements
     };
   }
 
@@ -228,57 +133,34 @@ class WizardService {
    * Save HR setup
    */
   async saveHRSetup(sessionId, hrSetup) {
-    const hrSetupId = uuidv4();
-    const now = new Date();
-
-    const existing = await livyService.select(
-      'hr_setup',
-      '*',
-      `session_id = '${sessionId}'`
-    );
-
-    const setupData = {
-      hris_system: hrSetup.hrisSystem,
-      update_method: hrSetup.updateMethod,
-      employee_file_path: hrSetup.employeeFilePath || null,
-      employee_count: hrSetup.employeeCount || 0,
-      updated_at: now
-    };
-
-    if (existing && existing.length > 0) {
-      await livyService.update('hr_setup', setupData, `session_id = '${sessionId}'`);
-    } else {
-      await livyService.insert('hr_setup', {
-        hr_setup_id: hrSetupId,
-        session_id: sessionId,
-        ...setupData,
-        created_at: now
-      });
-    }
+    await dbService.saveHRSetup(sessionId, {
+      hris_system_id: hrSetup.hris_system_id || hrSetup.hrisSystem,
+      update_method_id: hrSetup.update_method_id || hrSetup.updateMethod,
+      update_frequency: hrSetup.update_frequency || hrSetup.updateFrequency,
+      api_credentials_provided: hrSetup.api_credentials_provided || hrSetup.apiCredentialsProvided || false,
+      notes: hrSetup.notes || null
+    });
 
     await this.updateSessionProgress(sessionId, 5);
+    return { success: true };
   }
 
   /**
    * Get HR setup
    */
   async getHRSetup(sessionId) {
-    const setups = await livyService.select(
-      'hr_setup',
-      '*',
-      `session_id = '${sessionId}'`
-    );
+    const hrSetup = await dbService.getHRSetup(sessionId);
 
-    if (!setups || setups.length === 0) {
+    if (!hrSetup) {
       return null;
     }
 
-    const data = setups[0];
     return {
-      hrisSystem: data.hris_system,
-      updateMethod: data.update_method,
-      employeeFilePath: data.employee_file_path,
-      employeeCount: data.employee_count
+      hrisSystem: hrSetup.hris_system_id,
+      updateMethod: hrSetup.update_method_id,
+      updateFrequency: hrSetup.update_frequency,
+      apiCredentialsProvided: hrSetup.api_credentials_provided,
+      notes: hrSetup.notes
     };
   }
 
@@ -286,55 +168,30 @@ class WizardService {
    * Save hardware preferences
    */
   async saveHardware(sessionId, hardware) {
-    const hardwareId = uuidv4();
-    const now = new Date();
-
-    const existing = await livyService.select(
-      'hardware_preferences',
-      '*',
-      `session_id = '${sessionId}'`
-    );
-
-    const hardwareData = {
-      device_procurement: hardware.deviceProcurement,
-      device_requirements: hardware.deviceRequirements || null,
-      welcome_gift: hardware.welcomeGift,
-      updated_at: now
-    };
-
-    if (existing && existing.length > 0) {
-      await livyService.update('hardware_preferences', hardwareData, `session_id = '${sessionId}'`);
-    } else {
-      await livyService.insert('hardware_preferences', {
-        hardware_id: hardwareId,
-        session_id: sessionId,
-        ...hardwareData,
-        created_at: now
-      });
-    }
+    await dbService.saveHardwarePreferences(sessionId, {
+      device_procurement_id: hardware.device_procurement_id || hardware.deviceProcurement,
+      welcome_gift_id: hardware.welcome_gift_id || hardware.welcomeGift,
+      additional_requirements: hardware.additional_requirements || hardware.additionalRequirements
+    });
 
     await this.updateSessionProgress(sessionId, 6);
+    return { success: true };
   }
 
   /**
    * Get hardware preferences
    */
   async getHardware(sessionId) {
-    const hardware = await livyService.select(
-      'hardware_preferences',
-      '*',
-      `session_id = '${sessionId}'`
-    );
+    const hardware = await dbService.getHardwarePreferences(sessionId);
 
-    if (!hardware || hardware.length === 0) {
+    if (!hardware) {
       return null;
     }
 
-    const data = hardware[0];
     return {
-      deviceProcurement: data.device_procurement,
-      deviceRequirements: data.device_requirements,
-      welcomeGift: data.welcome_gift
+      deviceProcurement: hardware.device_procurement_id,
+      welcomeGift: hardware.welcome_gift_id,
+      additionalRequirements: hardware.additional_requirements
     };
   }
 
@@ -342,84 +199,87 @@ class WizardService {
    * Save support connections
    */
   async saveSupportConnections(sessionId, support) {
-    const supportId = uuidv4();
-    const now = new Date();
-
-    const existing = await livyService.select(
-      'support_connections',
-      '*',
-      `session_id = '${sessionId}'`
-    );
-
-    const supportData = {
-      concierge_name: support.conciergeName,
-      concierge_email: support.conciergeEmail,
-      concierge_phone: support.conciergePhone,
-      leadership_name: support.leadershipName,
-      leadership_title: support.leadershipTitle,
-      leadership_email: support.leadershipEmail,
-      support_procedure_acknowledged: support.supportProcedureAcknowledged,
-      updated_at: now
-    };
-
-    if (existing && existing.length > 0) {
-      await livyService.update('support_connections', supportData, `session_id = '${sessionId}'`);
-    } else {
-      await livyService.insert('support_connections', {
-        support_id: supportId,
-        session_id: sessionId,
-        ...supportData,
-        created_at: now
-      });
-    }
+    await dbService.saveSupportConnection(sessionId, {
+      primary_channel: support.primary_channel || support.primaryChannel,
+      sla_tier: support.sla_tier || support.slaTier,
+      escalation_contact: support.escalation_contact || support.escalationContact,
+      special_instructions: support.special_instructions || support.specialInstructions
+    });
 
     await this.updateSessionProgress(sessionId, 7);
+    return { success: true };
   }
 
   /**
    * Get support connections
    */
   async getSupportConnections(sessionId) {
-    const support = await livyService.select(
-      'support_connections',
-      '*',
-      `session_id = '${sessionId}'`
-    );
+    const support = await dbService.getSupportConnection(sessionId);
 
-    if (!support || support.length === 0) {
+    if (!support) {
       return null;
     }
 
-    const data = support[0];
     return {
-      conciergeName: data.concierge_name,
-      conciergeEmail: data.concierge_email,
-      conciergePhone: data.concierge_phone,
-      leadershipName: data.leadership_name,
-      leadershipTitle: data.leadership_title,
-      leadershipEmail: data.leadership_email,
-      supportProcedureAcknowledged: data.support_procedure_acknowledged
+      primaryChannel: support.primary_channel,
+      slaTier: support.sla_tier,
+      escalationContact: support.escalation_contact,
+      specialInstructions: support.special_instructions
     };
   }
 
   /**
-   * Get complete wizard data
+   * Get complete wizard data for a session
    */
   async getCompleteWizardData(sessionId) {
-    const session = await this.getSession(sessionId);
-    const contacts = await this.getContacts(sessionId);
-    const serviceOrder = await this.getServiceOrder(sessionId);
-    const hrSetup = await this.getHRSetup(sessionId);
-    const hardware = await this.getHardware(sessionId);
-    const support = await this.getSupportConnections(sessionId);
+    const session = await dbService.getSession(sessionId);
+
+    if (!session) {
+      throw new Error('Session not found');
+    }
+
+    const [contacts, serviceOrder, hrSetup, hardware, support] = await Promise.all([
+      this.getContacts(sessionId),
+      this.getServiceOrder(sessionId),
+      this.getHRSetup(sessionId),
+      this.getHardware(sessionId),
+      this.getSupportConnections(sessionId)
+    ]);
 
     return {
-      session,
+      sessionId: session.session_id,
+      companyName: session.company_name,
+      status: session.status,
+      currentStep: session.current_step,
+      startedAt: session.started_at,
+      completedAt: session.completed_at,
       contacts,
       serviceOrder,
       hrSetup,
       hardware,
       support
+    };
+  }
+
+  /**
+   * Upload a file
+   */
+  async uploadFile(sessionId, category, file) {
+    // For now, just return success - file is already saved by multer
+    await dbService.logAudit(sessionId, 'file_upload', {
+      category,
+      filename: file.filename,
+      originalname: file.originalname,
+      size: file.size
+    });
+
+    return {
+      success: true,
+      file: {
+        name: file.originalname,
+        category,
+        uploadedAt: new Date()
+      }
     };
   }
 }

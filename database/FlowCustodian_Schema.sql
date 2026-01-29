@@ -291,8 +291,12 @@ BEGIN
     VALUES 
         ('workday', 'Workday', 1),
         ('bamboohr', 'BambooHR', 1),
-        ('guidepoint', 'Guidepoint', 0),
-        ('custom', 'Custom/Other', 0);
+        ('adp', 'ADP', 1),
+        ('rippling', 'Rippling', 1),
+        ('gusto', 'Gusto', 1),
+        ('namely', 'Namely', 1),
+        ('ukgpro', 'UKG Pro', 1),
+        ('other', 'Other', 0);
 END
 GO
 

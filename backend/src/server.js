@@ -6,9 +6,7 @@ const morgan = require('morgan');
 const compression = require('compression');
 const config = require('./config');
 const routes = require('./routes');
-const livyService = require('./services/livyService');
-const authService = require('./services/authService');
-const configService = require('./services/configService');
+const sqlService = require('./services/sqlService');
 
 const app = express();
 
@@ -47,17 +45,14 @@ app.use((req, res) => {
 // Initialize database on startup
 async function initializeDatabase() {
   try {
-    console.log('Initializing database schema...');
-    await livyService.initializeSchema();
-    
-    // Initialize wizard configuration
-    console.log('Initializing wizard configuration...');
-    configService.getConfig(); // This will create the default config file if it doesn't exist
-    console.log('✓ Wizard configuration ready');
-    console.log('Database schema initialized successfully');
+    console.log('🔌 Connecting to SQL Server...');
+    await sqlService.connect();
+    console.log('✓ SQL Server connection established');
+    console.log('✓ Database ready');
   } catch (error) {
-    console.error('Failed to initialize database:', error);
-    console.log('Continuing without schema initialization - tables may need to be created manually');
+    console.error('❌ Failed to connect to SQL Server:', error.message);
+    console.error('Please check your database configuration in .env file');
+    throw error;
   }
 }
 
@@ -67,29 +62,17 @@ const PORT = config.port;
 app.listen(PORT, async () => {
   console.log(`🚀 flowCUSTODIAN Wizard API running on port ${PORT}`);
   console.log(`📊 Environment: ${config.nodeEnv}`);
-  console.log(`🔗 Livy Endpoint: ${config.fabric.livyEndpoint}`);
-  
-  // Initialize authentication
-  try {
-    console.log(`🔐 Initializing Fabric authentication (${config.fabric.authType})...`);
-    await authService.initialize();
-    console.log('✓ Fabric authentication initialized');
-  } catch (error) {
-    console.error('❌ Failed to initialize authentication:', error.message);
-    console.error('Please check your Fabric credentials in .env file');
-  }
+  console.log(`�️  Database: ${process.env.DB_SERVER}/${process.env.DB_NAME}`);
   
   // Initialize database
   await initializeDatabase();
 });
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
   console.log('SIGTERM signal received: closing HTTP server');
-  authService.cleanup();
-  server.close(() => {
-    console.log('HTTP server closed');
-  });
+  await sqlService.disconnect();
+  process.exit(0);
 });
 
 module.exports = app;

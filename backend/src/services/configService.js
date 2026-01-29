@@ -1,25 +1,15 @@
 // services/configService.js
-const fs = require('fs');
-const path = require('path');
+const sqlService = require('./sqlService');
 
 class ConfigService {
   constructor() {
-    this.configPath = path.join(__dirname, '../../data/wizard-config.json');
-    this.config = this.loadConfig();
+    this.defaultConfig = this.getDefaultConfig();
   }
 
-  loadConfig() {
-    try {
-      if (fs.existsSync(this.configPath)) {
-        const data = fs.readFileSync(this.configPath, 'utf8');
-        return JSON.parse(data);
-      }
-    } catch (error) {
-      console.error('Error loading configuration:', error);
+  async ensureConnection() {
+    if (!sqlService.getPool()) {
+      await sqlService.connect();
     }
-    
-    // Return default configuration if file doesn't exist or error
-    return this.getDefaultConfig();
   }
 
   getDefaultConfig() {
@@ -149,53 +139,131 @@ class ConfigService {
   }
 
   getConfig() {
-    return this.config;
+    return this.defaultConfig;
   }
 
-  getConcierges() {
-    return this.config.concierges;
+  async getConcierges() {
+    try {
+      await this.ensureConnection();
+      const result = await sqlService.query('SELECT * FROM concierges WHERE active = 1 ORDER BY name');
+      return result.map(c => ({
+        id: c.concierge_id,
+        name: c.name,
+        email: c.email,
+        phone: c.phone || '',
+        avatar: c.avatar,
+        specialties: c.specialties ? JSON.parse(c.specialties) : []
+      }));
+    } catch (error) {
+      console.error('Error loading concierges from SQL:', error.message);
+      return this.defaultConfig.concierges;
+    }
   }
 
-  getServiceTiers() {
-    return this.config.serviceTiers;
+  async getServiceTiers() {
+    try {
+      await this.ensureConnection();
+      const result = await sqlService.query('SELECT * FROM service_tiers WHERE active = 1 ORDER BY monthly_price');
+      return result.map(t => ({
+        id: t.tier_id,
+        name: t.name,
+        monthlyPrice: t.monthly_price,
+        features: t.features ? JSON.parse(t.features) : [],
+        recommended: t.recommended
+      }));
+    } catch (error) {
+      console.error('Error loading service tiers from SQL:', error.message);
+      return this.defaultConfig.serviceTiers;
+    }
   }
 
-  getHRISSystems() {
-    return this.config.hrisSystems;
+  async getHRISSystems() {
+    try {
+      await this.ensureConnection();
+      const result = await sqlService.query('SELECT * FROM hris_systems ORDER BY name');
+      return result.map(h => ({
+        id: h.system_id,
+        name: h.name,
+        apiSupported: h.api_supported
+      }));
+    } catch (error) {
+      console.error('Error loading HRIS systems from SQL:', error.message);
+      return this.defaultConfig.hrisSystems;
+    }
   }
 
-  getUpdateMethods() {
-    return this.config.updateMethods;
+  async getUpdateMethods() {
+    try {
+      await this.ensureConnection();
+      const result = await sqlService.query('SELECT * FROM update_methods ORDER BY name');
+      return result.map(m => ({
+        id: m.method_id,
+        name: m.name,
+        description: m.description
+      }));
+    } catch (error) {
+      console.error('Error loading update methods from SQL:', error.message);
+      return this.defaultConfig.updateMethods;
+    }
   }
 
-  getHardwareOptions() {
-    return this.config.hardwareOptions;
+  async getHardwareOptions() {
+    try {
+      await this.ensureConnection();
+      const result = await sqlService.query('SELECT * FROM hardware_options ORDER BY category, name');
+      
+      const deviceProcurement = result
+        .filter(h => h.category === 'device_procurement')
+        .map(h => ({
+          id: h.option_id,
+          name: h.name,
+          description: h.description
+        }));
+      
+      const welcomeGifts = result
+        .filter(h => h.category === 'welcome_gift')
+        .map(h => ({
+          id: h.option_id,
+          name: h.name,
+          description: h.description,
+          value: h.value
+        }));
+      
+      return { deviceProcurement, welcomeGifts };
+    } catch (error) {
+      console.error('Error loading hardware options from SQL:', error.message);
+      return this.defaultConfig.hardwareOptions;
+    }
   }
 
   getSupportOptions() {
-    return this.config.supportOptions;
+    return this.defaultConfig.supportOptions;
   }
 
-  getInvitations() {
-    return this.config.invitations || [];
+  async getInvitations() {
+    try {
+      await this.ensureConnection();
+      const result = await sqlService.query('SELECT * FROM invitations ORDER BY created_at DESC');
+      return result.map(i => ({
+        id: i.id,
+        code: i.code,
+        customerProfile: i.customer_profile ? JSON.parse(i.customer_profile) : {},
+        used: i.used,
+        usedAt: i.used_at,
+        createdAt: i.created_at
+      }));
+    } catch (error) {
+      console.error('Error loading invitations from SQL:', error.message);
+      return [];
+    }
   }
 
   updateConfig(newConfig) {
-    this.config = { ...this.config, ...newConfig };
-    this.saveConfig();
+    console.warn('updateConfig() deprecated - data is now in SQL Server');
   }
 
   saveConfig() {
-    try {
-      const dir = path.dirname(this.configPath);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      fs.writeFileSync(this.configPath, JSON.stringify(this.config, null, 2));
-      console.log('✓ Configuration saved to disk');
-    } catch (error) {
-      console.error('Error saving configuration:', error);
-    }
+    console.warn('saveConfig() deprecated - data is now in SQL Server');
   }
 }
 

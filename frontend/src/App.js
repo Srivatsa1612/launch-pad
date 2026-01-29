@@ -1,7 +1,8 @@
 // App.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { WizardProvider, useWizard } from './context/WizardContext';
 import ProgressBar from './components/ProgressBar';
+import SplashScreen from './components/SplashScreen';
 import WelcomePage from './pages/WelcomePage';
 import KeyContactsPage from './pages/KeyContactsPage';
 import ServiceOrderPage from './pages/ServiceOrderPage';
@@ -23,6 +24,16 @@ const WizardContent = () => {
   const [companyInput, setCompanyInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
+
+  // Show splash screen for 2 seconds on initial load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 2000);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   // Check URL for dashboard route
   React.useEffect(() => {
@@ -52,6 +63,11 @@ const WizardContent = () => {
       return <InvitationsManagement />;
     }
     return <AdminDashboard />;
+  }
+
+  // Show splash screen on initial load
+  if (showSplash) {
+    return <SplashScreen />;
   }
 
   // Show dashboard if requested
