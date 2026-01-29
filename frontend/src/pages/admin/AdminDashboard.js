@@ -7,7 +7,8 @@ import {
   UsersIcon, 
   ComputerDesktopIcon,
   Cog6ToothIcon,
-  EnvelopeIcon
+  EnvelopeIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline';
 
 const AdminDashboard = () => {
@@ -46,6 +47,18 @@ const AdminDashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Customer Pre-Setup */}
+          <a href="/admin/customer-setup" className="card hover:border-primary-500 transition-all group border-primary-500/50 bg-gradient-to-br from-primary-900/20 to-dark-900">
+            <div className="flex items-center justify-between mb-4">
+              <DocumentTextIcon className="w-8 h-8 text-primary-400" />
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Customer Pre-Setup</h3>
+            <p className="text-dark-400 text-sm">Enter customer details before sending invitation</p>
+            <div className="mt-4 text-primary-400 text-sm group-hover:translate-x-1 transition-transform">
+              Create Profile →
+            </div>
+          </a>
+
           {/* Concierges */}
           <a href="/admin/concierges" className="card hover:border-primary-500 transition-all group">
             <div className="flex items-center justify-between mb-4">

@@ -567,4 +567,108 @@ router.delete('/admin/config/invitations/:id', (req, res) => {
   }
 });
 
+// =====================================================
+// CUSTOMER PRE-SETUP PROFILES
+// =====================================================
+
+/**
+ * POST /api/admin/customer-profiles - Save complete customer profile
+ */
+router.post('/admin/customer-profiles', (req, res) => {
+  try {
+    const profile = req.body;
+    if (!profile.code) {
+      return res.status(400).json({ error: 'Profile code is required' });
+    }
+
+    const config = configService.getConfig();
+    if (!config.customerProfiles) {
+      config.customerProfiles = [];
+    }
+
+    // Remove if exists, then add (update or create)
+    config.customerProfiles = config.customerProfiles.filter(p => p.code !== profile.code);
+    config.customerProfiles.push(profile);
+    
+    configService.updateConfig(config);
+    res.status(201).json(profile);
+  } catch (error) {
+    console.error('Error saving customer profile:', error);
+    res.status(500).json({ error: 'Failed to save profile' });
+  }
+});
+
+/**
+ * GET /api/admin/customer-profiles - Get all customer profiles
+ */
+router.get('/admin/customer-profiles', (req, res) => {
+  try {
+    const config = configService.getConfig();
+    const profiles = config.customerProfiles || [];
+    res.json(profiles);
+  } catch (error) {
+    console.error('Error fetching profiles:', error);
+    res.status(500).json({ error: 'Failed to fetch profiles' });
+  }
+});
+
+/**
+ * GET /api/admin/customer-profiles/:code - Get profile by invitation code
+ */
+router.get('/admin/customer-profiles/:code', (req, res) => {
+  try {
+    const config = configService.getConfig();
+    const profiles = config.customerProfiles || [];
+    const profile = profiles.find(p => p.code === req.params.code);
+    
+    if (!profile) {
+      return res.status(404).json({ error: 'Profile not found' });
+    }
+
+    res.json(profile);
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+    res.status(500).json({ error: 'Failed to fetch profile' });
+  }
+});
+
+/**
+ * PUT /api/admin/customer-profiles/:code - Update customer profile
+ */
+router.put('/admin/customer-profiles/:code', (req, res) => {
+  try {
+    const config = configService.getConfig();
+    if (!config.customerProfiles) {
+      config.customerProfiles = [];
+    }
+
+    const index = config.customerProfiles.findIndex(p => p.code === req.params.code);
+    if (index === -1) {
+      return res.status(404).json({ error: 'Profile not found' });
+    }
+
+    config.customerProfiles[index] = { ...config.customerProfiles[index], ...req.body };
+    configService.updateConfig(config);
+    res.json(config.customerProfiles[index]);
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+/**
+ * DELETE /api/admin/customer-profiles/:code - Delete customer profile
+ */
+router.delete('/admin/customer-profiles/:code', (req, res) => {
+  try {
+    const config = configService.getConfig();
+    config.customerProfiles = (config.customerProfiles || []).filter(p => p.code !== req.params.code);
+    configService.updateConfig(config);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting profile:', error);
+    res.status(500).json({ error: 'Failed to delete profile' });
+  }
+});
+
 module.exports = router;

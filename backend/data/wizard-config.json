@@ -245,5 +245,18 @@
     "website": "https://mtheorygroup.com",
     "supportEmail": "support@m-theorygrp.com",
     "salesEmail": "sales@m-theorygrp.com"
-  }
+  },
+  "invitations": [
+    {
+      "id": "sfy3iv2ayelzmkhj5617kl",
+      "code": "sfy3iv2ayelzmkhj5617kl",
+      "companyName": "MTG",
+      "contactName": "James Herbert Herring",
+      "contactEmail": "jherring@m-theorygrp.com",
+      "contactPhone": "3363005947",
+      "notes": "",
+      "createdAt": "2026-01-29T07:10:55.742Z",
+      "used": false
+    }
+  ]
 }

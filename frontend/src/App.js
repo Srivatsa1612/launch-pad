@@ -16,6 +16,7 @@ import ServiceTierManagement from './pages/admin/ServiceTierManagement';
 import HRISManagement from './pages/admin/HRISManagement';
 import HardwareManagement from './pages/admin/HardwareManagement';
 import InvitationsManagement from './pages/admin/InvitationsManagement';
+import CustomerPreSetup from './pages/admin/CustomerPreSetup';
 
 const WizardContent = () => {
   const { currentStep, sessionId, createSession } = useWizard();
@@ -32,6 +33,9 @@ const WizardContent = () => {
 
   // Admin routes
   if (window.location.pathname.startsWith('/admin')) {
+    if (window.location.pathname === '/admin/customer-setup') {
+      return <CustomerPreSetup />;
+    }
     if (window.location.pathname === '/admin/concierges') {
       return <ConciergeManagement />;
     }

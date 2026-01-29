@@ -93,7 +93,14 @@ export const adminAPI = {
   
   // Invitations
   addInvitation: (data) => api.post('/admin/config/invitations', data),
-  deleteInvitation: (id) => api.delete(`/admin/config/invitations/${id}`)
+  deleteInvitation: (id) => api.delete(`/admin/config/invitations/${id}`),
+  
+  // Customer Pre-Setup (store complete customer profile)
+  saveCustomerProfile: (data) => api.post('/admin/customer-profiles', data),
+  getCustomerProfile: (code) => api.get(`/admin/customer-profiles/${code}`),
+  getCustomerProfiles: () => api.get('/admin/customer-profiles'),
+  updateCustomerProfile: (code, data) => api.put(`/admin/customer-profiles/${code}`, data),
+  deleteCustomerProfile: (code) => api.delete(`/admin/customer-profiles/${code}`)
 };
 
 export default api;

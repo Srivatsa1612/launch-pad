@@ -1,6 +1,6 @@
 // context/WizardContext.js
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { sessionAPI } from '../services/api';
+import { sessionAPI, adminAPI } from '../services/api';
 
 const WizardContext = createContext();
 
@@ -18,6 +18,8 @@ export const WizardProvider = ({ children }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [invitationCode, setInvitationCode] = useState(null);
+  const [prefilledData, setPrefilledData] = useState(null);
   const [formData, setFormData] = useState({
     primaryContactName: '',
     primaryContactEmail: '',
@@ -25,7 +27,7 @@ export const WizardProvider = ({ children }) => {
     notes: ''
   });
 
-  // Load session from localStorage on mount
+  // Load session from localStorage and check for invite code on mount
   useEffect(() => {
     const savedSessionId = localStorage.getItem('wizardSessionId');
     const savedCompanyName = localStorage.getItem('wizardCompanyName');
@@ -36,7 +38,38 @@ export const WizardProvider = ({ children }) => {
       setCompanyName(savedCompanyName || '');
       setCurrentStep(parseInt(savedStep) || 1);
     }
+
+    // Check URL for invite parameter
+    const params = new URLSearchParams(window.location.search);
+    const inviteCode = params.get('invite');
+    if (inviteCode && !savedSessionId) {
+      setInvitationCode(inviteCode);
+      loadPrefilledData(inviteCode);
+    }
   }, []);
+
+  // Load customer pre-setup profile from invitation code
+  const loadPrefilledData = async (code) => {
+    try {
+      setLoading(true);
+      const response = await adminAPI.getCustomerProfile?.(code);
+      if (response?.data) {
+        setPrefilledData(response.data);
+        setCompanyName(response.data.companyName);
+        setFormData({
+          primaryContactName: response.data.contactName || '',
+          primaryContactEmail: response.data.contactEmail || '',
+          primaryContactPhone: response.data.contactPhone || '',
+          notes: response.data.notes || ''
+        });
+      }
+    } catch (err) {
+      console.warn('Could not load prefilled data:', err.message);
+      setError(null); // Don't show error for missing invites
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Save session to localStorage whenever it changes
   useEffect(() => {
@@ -137,9 +170,12 @@ export const WizardProvider = ({ children }) => {
     loading,
     error,
     formData,
+    invitationCode,
+    prefilledData,
     updateFormData,
     createSession,
     loadSession,
+    loadPrefilledData,
     nextStep,
     previousStep,
     goToStep,
