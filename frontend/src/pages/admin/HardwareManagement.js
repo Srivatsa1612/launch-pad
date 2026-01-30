@@ -7,6 +7,7 @@ const HardwareManagement = () => {
   const [hardware, setHardware] = useState([]);
   const [tab, setTab] = useState('devices');
   const [form, setForm] = useState({ name: '', description: '', value: 0 });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadConfig();
@@ -14,10 +15,17 @@ const HardwareManagement = () => {
 
   const loadConfig = async () => {
     try {
+      setLoading(true);
       const response = await configAPI.getAll();
-      setHardware(Array.isArray(response.data.hardwareOptions) ? response.data.hardwareOptions : []);
+      const options = Array.isArray(response.data.hardwareOptions) 
+        ? response.data.hardwareOptions 
+        : [];
+      console.log('Loaded hardware options:', options);
+      setHardware(options);
     } catch (error) {
       console.error('Error loading config:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -97,29 +105,35 @@ const HardwareManagement = () => {
           <p className="text-dark-300">Manage device and welcome gift options</p>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-4 mb-8 border-b border-dark-700">
-          <button
-            onClick={() => setTab('devices')}
-            className={`px-4 py-2 font-medium transition-colors ${
-              tab === 'devices'
-                ? 'text-primary-400 border-b-2 border-primary-400'
-                : 'text-dark-400 hover:text-dark-300'
-            }`}
-          >
-            Device Procurement
-          </button>
-          <button
-            onClick={() => setTab('gifts')}
-            className={`px-4 py-2 font-medium transition-colors ${
-              tab === 'gifts'
-                ? 'text-primary-400 border-b-2 border-primary-400'
-                : 'text-dark-400 hover:text-dark-300'
-            }`}
-          >
-            Welcome Gifts
-          </button>
-        </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+          </div>
+        ) : (
+          <>
+            {/* Tabs */}
+            <div className="flex gap-4 mb-8 border-b border-dark-700">
+              <button
+                onClick={() => setTab('devices')}
+                className={`px-4 py-2 font-medium transition-colors ${
+                  tab === 'devices'
+                    ? 'text-primary-400 border-b-2 border-primary-400'
+                    : 'text-dark-400 hover:text-dark-300'
+                }`}
+              >
+                Device Procurement
+              </button>
+              <button
+                onClick={() => setTab('gifts')}
+                className={`px-4 py-2 font-medium transition-colors ${
+                  tab === 'gifts'
+                    ? 'text-primary-400 border-b-2 border-primary-400'
+                    : 'text-dark-400 hover:text-dark-300'
+                }`}
+              >
+                Welcome Gifts
+              </button>
+            </div>
 
         {/* Device Procurement Tab */}
         {tab === 'devices' && (
@@ -158,22 +172,28 @@ const HardwareManagement = () => {
 
             <div className="space-y-4">
               <h2 className="text-2xl font-bold mb-6">Current Options ({hardware.filter(h => h.option_type === 'device').length})</h2>
-              {[...hardware.filter(h => h.option_type === 'device')].sort((a, b) => a.name.localeCompare(b.name)).map((device) => (
-                <div key={device.id} className="card">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h3 className="font-semibold">{device.name}</h3>
-                      <p className="text-sm text-dark-400 mt-2">{device.description}</p>
-                    </div>
-                    <button
-                      onClick={() => handleDeleteDevice(device.id)}
-                      className="p-2 hover:bg-dark-700 rounded"
-                    >
-                      <TrashIcon className="w-5 h-5 text-red-400" />
-                    </button>
-                  </div>
+              {hardware.filter(h => h.option_type === 'device').length === 0 ? (
+                <div className="card text-center py-8 text-dark-400">
+                  No devices added yet. Create one above to get started.
                 </div>
-              ))}
+              ) : (
+                [...hardware.filter(h => h.option_type === 'device')].sort((a, b) => a.name.localeCompare(b.name)).map((device) => (
+                  <div key={device.id} className="card">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="font-semibold">{device.name}</h3>
+                        <p className="text-sm text-dark-400 mt-2">{device.description}</p>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteDevice(device.id)}
+                        className="p-2 hover:bg-dark-700 rounded"
+                      >
+                        <TrashIcon className="w-5 h-5 text-red-400" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}
@@ -220,25 +240,33 @@ const HardwareManagement = () => {
                 <button type="submit" className="btn-primary flex items-center gap-2">
                   <PlusIcon className="w-5 h-5" />
                   Add Welcome Gift
-                </button>
-              </form>
-            </div>
-
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold mb-6">Current Gifts ({hardware.filter(h => h.option_type === 'gift').length})</h2>
-              {[...hardware.filter(h => h.option_type === 'gift')].sort((a, b) => a.name.localeCompare(b.name)).map((gift) => (
-                <div key={gift.id} className="card">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h3 className="font-semibold">{gift.name}</h3>
-                      <p className="text-sm text-dark-400 mt-2">{gift.description}</p>
-                      <p className="text-xs text-primary-400 mt-2">Value: ${gift.estimated_value || gift.value}</p>
+               hardware.filter(h => h.option_type === 'gift').length === 0 ? (
+                <div className="card text-center py-8 text-dark-400">
+                  No gifts added yet. Create one above to get started.
+                </div>
+              ) : (
+                [...hardware.filter(h => h.option_type === 'gift')].sort((a, b) => a.name.localeCompare(b.name)).map((gift) => (
+                  <div key={gift.id} className="card">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="font-semibold">{gift.name}</h3>
+                        <p className="text-sm text-dark-400 mt-2">{gift.description}</p>
+                        <p className="text-xs text-primary-400 mt-2">Value: ${gift.estimated_value || gift.value}</p>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteGift(gift.id)}
+                        className="p-2 hover:bg-dark-700 rounded"
+                      >
+                        <TrashIcon className="w-5 h-5 text-red-400" />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => handleDeleteGift(gift.id)}
-                      className="p-2 hover:bg-dark-700 rounded"
-                    >
-                      <TrashIcon className="w-5 h-5 text-red-400" />
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+          </       <TrashIcon className="w-5 h-5 text-red-400" />
                     </button>
                   </div>
                 </div>
