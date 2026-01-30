@@ -270,10 +270,9 @@ const HardwareManagement = () => {
                 ))
               )}
             </div>
-            </div>
           </div>
         )}
-          </>
+        </>
         )}
       </div>
     </div>
