@@ -240,7 +240,13 @@ const HardwareManagement = () => {
                 <button type="submit" className="btn-primary flex items-center gap-2">
                   <PlusIcon className="w-5 h-5" />
                   Add Welcome Gift
-               hardware.filter(h => h.option_type === 'gift').length === 0 ? (
+                </button>
+              </form>
+            </div>
+
+            <div className="space-y-4">
+              <h2 className="text-2xl font-bold mb-6">Current Options ({hardware.filter(h => h.option_type === 'gift').length})</h2>
+              {hardware.filter(h => h.option_type === 'gift').length === 0 ? (
                 <div className="card text-center py-8 text-dark-400">
                   No gifts added yet. Create one above to get started.
                 </div>
@@ -264,15 +270,10 @@ const HardwareManagement = () => {
                 ))
               )}
             </div>
-          </div>
-        )}
-          </       <TrashIcon className="w-5 h-5 text-red-400" />
-                    </button>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
+        )}
+          </>
         )}
       </div>
     </div>
