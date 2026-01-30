@@ -179,7 +179,20 @@ const CustomerPreSetup = () => {
       }
     } catch (error) {
       console.error('Error saving profile:', error);
-      alert('Failed to save profile');
+      console.error('Error details:', error.response?.data || error.message);
+      
+      let errorMessage = 'Failed to save profile';
+      if (error.response?.data?.error) {
+        errorMessage += ': ' + error.response.data.error;
+      } else if (error.message) {
+        errorMessage += ': ' + error.message;
+      }
+      
+      if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
+        errorMessage = 'Cannot connect to server. Please ensure the backend server is running on port 3001.';
+      }
+      
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
