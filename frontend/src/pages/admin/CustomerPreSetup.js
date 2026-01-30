@@ -145,10 +145,13 @@ const CustomerPreSetup = () => {
         ...form,
         customFields: form.customFields ? form.customFields.split('\n').map(f => f.trim()).filter(Boolean) : [],
         createdAt: new Date().toISOString(),
-        used: false
+        used: false,
+        status: 'draft' // Save to staging first
       };
 
-      await adminAPI.saveCustomerProfile(profile);
+      // Save to staging table for review
+      await adminAPI.saveStagingProfile(profile);
+      
       setSavedProfiles((prev) => {
         const exists = prev.some(p => p.code === code);
         if (exists) {
@@ -159,8 +162,21 @@ const CustomerPreSetup = () => {
       setInviteCode(code);
       setUnsavedChanges(false);
       
-      alert(`Profile saved! Invite code: ${code}\n\nInvitation link copied to clipboard!`);
-      copyInviteUrl(code);
+      // Ask if they want to submit for review
+      const submitNow = window.confirm(
+        `Profile saved to staging!\n\nInvite code: ${code}\n\n` +
+        `Would you like to submit this profile for review now?\n\n` +
+        `- Click OK to submit for review\n` +
+        `- Click Cancel to keep as draft and review later`
+      );
+      
+      if (submitNow) {
+        await adminAPI.submitProfileForReview(code, { submittedBy: 'admin@m-theorygrp.com' });
+        alert('Profile submitted for review! Go to Profile Review page to approve.');
+      } else {
+        copyInviteUrl(code);
+        alert('Profile saved as draft. You can edit and submit for review later.');
+      }
     } catch (error) {
       console.error('Error saving profile:', error);
       alert('Failed to save profile');

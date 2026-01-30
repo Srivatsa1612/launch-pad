@@ -1088,4 +1088,248 @@ router.delete('/admin/customer-profiles/:code', async (req, res) => {
   }
 });
 
+// =====================================================
+// STAGING & APPROVAL WORKFLOW
+// =====================================================
+
+/**
+ * POST /api/admin/staging/profiles - Save profile to staging
+ */
+router.post('/admin/staging/profiles', async (req, res) => {
+  try {
+    const profile = req.body;
+    const createdBy = profile.createdBy || 'admin@m-theorygrp.com';
+    
+    const result = await sqlService.query(`
+      EXEC sp_SaveProfileToStaging
+        @profileCode = @profileCode,
+        @companyName = @companyName,
+        @contactName = @contactName,
+        @contactEmail = @contactEmail,
+        @contactPhone = @contactPhone,
+        @billingName = @billingName,
+        @billingEmail = @billingEmail,
+        @billingPhone = @billingPhone,
+        @techName = @techName,
+        @techEmail = @techEmail,
+        @techPhone = @techPhone,
+        @emergencyName = @emergencyName,
+        @emergencyEmail = @emergencyEmail,
+        @emergencyPhone = @emergencyPhone,
+        @serviceTier = @serviceTier,
+        @startDate = @startDate,
+        @contractTerm = @contractTerm,
+        @monthlyCommitment = @monthlyCommitment,
+        @hrisSystem = @hrisSystem,
+        @updateMethod = @updateMethod,
+        @syncFrequency = @syncFrequency,
+        @deviceChoice = @deviceChoice,
+        @giftChoice = @giftChoice,
+        @supportLevel = @supportLevel,
+        @notes = @notes,
+        @adminNotes = @adminNotes,
+        @profileJson = @profileJson,
+        @createdBy = @createdBy,
+        @status = @status
+    `, {
+      profileCode: profile.code,
+      companyName: profile.companyName,
+      contactName: profile.contactName || null,
+      contactEmail: profile.contactEmail || null,
+      contactPhone: profile.contactPhone || null,
+      billingName: profile.billingName || null,
+      billingEmail: profile.billingEmail || null,
+      billingPhone: profile.billingPhone || null,
+      techName: profile.techName || null,
+      techEmail: profile.techEmail || null,
+      techPhone: profile.techPhone || null,
+      emergencyName: profile.emergencyName || null,
+      emergencyEmail: profile.emergencyEmail || null,
+      emergencyPhone: profile.emergencyPhone || null,
+      serviceTier: profile.serviceTier || null,
+      startDate: profile.startDate || null,
+      contractTerm: profile.contractTerm || null,
+      monthlyCommitment: profile.monthlyCommitment || null,
+      hrisSystem: profile.hrisSystem || null,
+      updateMethod: profile.updateMethod || null,
+      syncFrequency: profile.syncFrequency || null,
+      deviceChoice: profile.deviceChoice || null,
+      giftChoice: profile.giftChoice || null,
+      supportLevel: profile.supportLevel || null,
+      notes: profile.notes || null,
+      adminNotes: profile.adminNotes || null,
+      profileJson: JSON.stringify(profile),
+      createdBy,
+      status: profile.status || 'draft'
+    });
+    
+    res.status(201).json({ success: true, result: result[0] });
+  } catch (error) {
+    console.error('Error saving profile to staging:', error);
+    res.status(500).json({ error: 'Failed to save profile to staging' });
+  }
+});
+
+/**
+ * GET /api/admin/staging/profiles - Get staging profiles with optional filter
+ */
+router.get('/admin/staging/profiles', async (req, res) => {
+  try {
+    const { status } = req.query;
+    
+    let query = 'SELECT * FROM customer_profiles_staging';
+    const params = {};
+    
+    if (status && status !== 'all') {
+      query += ' WHERE status = @status';
+      params.status = status;
+    }
+    
+    query += ' ORDER BY submitted_at DESC, created_at DESC';
+    
+    const result = await sqlService.query(query, params);
+    res.json(result || []);
+  } catch (error) {
+    console.error('Error fetching staging profiles:', error);
+    res.status(500).json({ error: 'Failed to fetch staging profiles' });
+  }
+});
+
+/**
+ * GET /api/admin/staging/profiles/:code - Get single staging profile
+ */
+router.get('/admin/staging/profiles/:code', async (req, res) => {
+  try {
+    const result = await sqlService.query(
+      'SELECT * FROM customer_profiles_staging WHERE profile_code = @code',
+      { code: req.params.code }
+    );
+    
+    if (!result || result.length === 0) {
+      return res.status(404).json({ error: 'Profile not found in staging' });
+    }
+    
+    res.json(result[0]);
+  } catch (error) {
+    console.error('Error fetching staging profile:', error);
+    res.status(500).json({ error: 'Failed to fetch staging profile' });
+  }
+});
+
+/**
+ * POST /api/admin/staging/profiles/:code/submit - Submit profile for review
+ */
+router.post('/admin/staging/profiles/:code/submit', async (req, res) => {
+  try {
+    const { submittedBy } = req.body;
+    
+    const result = await sqlService.query(`
+      EXEC sp_SubmitProfileForReview
+        @profileCode = @profileCode,
+        @submittedBy = @submittedBy
+    `, {
+      profileCode: req.params.code,
+      submittedBy: submittedBy || 'admin@m-theorygrp.com'
+    });
+    
+    res.json({ success: true, result: result[0] });
+  } catch (error) {
+    console.error('Error submitting profile for review:', error);
+    res.status(500).json({ error: 'Failed to submit profile for review' });
+  }
+});
+
+/**
+ * POST /api/admin/staging/profiles/:code/approve - Approve profile
+ */
+router.post('/admin/staging/profiles/:code/approve', async (req, res) => {
+  try {
+    const { approvedBy, reviewNotes } = req.body;
+    
+    const result = await sqlService.query(`
+      EXEC sp_ApproveProfile
+        @profileCode = @profileCode,
+        @approvedBy = @approvedBy,
+        @reviewNotes = @reviewNotes
+    `, {
+      profileCode: req.params.code,
+      approvedBy: approvedBy || 'admin@m-theorygrp.com',
+      reviewNotes: reviewNotes || null
+    });
+    
+    res.json({ success: true, result: result[0] });
+  } catch (error) {
+    console.error('Error approving profile:', error);
+    res.status(500).json({ error: 'Failed to approve profile' });
+  }
+});
+
+/**
+ * POST /api/admin/staging/profiles/:code/reject - Reject profile
+ */
+router.post('/admin/staging/profiles/:code/reject', async (req, res) => {
+  try {
+    const { rejectedBy, reviewNotes } = req.body;
+    
+    const result = await sqlService.query(`
+      EXEC sp_RejectProfile
+        @profileCode = @profileCode,
+        @rejectedBy = @rejectedBy,
+        @reviewNotes = @reviewNotes
+    `, {
+      profileCode: req.params.code,
+      rejectedBy: rejectedBy || 'admin@m-theorygrp.com',
+      reviewNotes: reviewNotes || null
+    });
+    
+    res.json({ success: true, result: result[0] });
+  } catch (error) {
+    console.error('Error rejecting profile:', error);
+    res.status(500).json({ error: 'Failed to reject profile' });
+  }
+});
+
+/**
+ * POST /api/admin/staging/profiles/:code/archive - Archive profile
+ */
+router.post('/admin/staging/profiles/:code/archive', async (req, res) => {
+  try {
+    const { archivedBy, reason } = req.body;
+    
+    const result = await sqlService.query(`
+      EXEC sp_ArchiveProfile
+        @profileCode = @profileCode,
+        @archivedBy = @archivedBy,
+        @reason = @reason
+    `, {
+      profileCode: req.params.code,
+      archivedBy: archivedBy || 'admin@m-theorygrp.com',
+      reason: reason || null
+    });
+    
+    res.json({ success: true, result: result[0] });
+  } catch (error) {
+    console.error('Error archiving profile:', error);
+    res.status(500).json({ error: 'Failed to archive profile' });
+  }
+});
+
+/**
+ * GET /api/admin/staging/profiles/:code/audit - Get audit history for profile
+ */
+router.get('/admin/staging/profiles/:code/audit', async (req, res) => {
+  try {
+    const result = await sqlService.query(`
+      EXEC sp_GetProfileAuditHistory @profileCode = @profileCode
+    `, {
+      profileCode: req.params.code
+    });
+    
+    res.json(result || []);
+  } catch (error) {
+    console.error('Error fetching audit history:', error);
+    res.status(500).json({ error: 'Failed to fetch audit history' });
+  }
+});
+
 module.exports = router;

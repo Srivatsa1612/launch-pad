@@ -19,6 +19,7 @@ import HRISManagement from './pages/admin/HRISManagement';
 import HardwareManagement from './pages/admin/HardwareManagement';
 import InvitationsManagement from './pages/admin/InvitationsManagement';
 import CustomerPreSetup from './pages/admin/CustomerPreSetup';
+import ProfileReview from './pages/admin/ProfileReview';
 
 const WizardContent = () => {
   const { currentStep, sessionId, createSession, invitationCode } = useWizard();
@@ -48,6 +49,9 @@ const WizardContent = () => {
   if (window.location.pathname.startsWith('/admin')) {
     if (window.location.pathname === '/admin/customer-setup') {
       return <CustomerPreSetup />;
+    }
+    if (window.location.pathname === '/admin/profile-review') {
+      return <ProfileReview />;
     }
     if (window.location.pathname === '/admin/concierges') {
       return <ConciergeManagement />;

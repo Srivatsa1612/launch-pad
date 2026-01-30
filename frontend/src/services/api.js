@@ -100,7 +100,17 @@ export const adminAPI = {
   getCustomerProfile: (code) => api.get(`/admin/customer-profiles/${code}`),
   getCustomerProfiles: () => api.get('/admin/customer-profiles'),
   updateCustomerProfile: (code, data) => api.put(`/admin/customer-profiles/${code}`, data),
-  deleteCustomerProfile: (code) => api.delete(`/admin/customer-profiles/${code}`)
+  deleteCustomerProfile: (code) => api.delete(`/admin/customer-profiles/${code}`),
+  
+  // Staging & Approval Workflow
+  saveStagingProfile: (data) => api.post('/admin/staging/profiles', data),
+  getStagingProfiles: (status = 'all') => api.get('/admin/staging/profiles', { params: { status } }),
+  getStagingProfile: (code) => api.get(`/admin/staging/profiles/${code}`),
+  submitProfileForReview: (code, data) => api.post(`/admin/staging/profiles/${code}/submit`, data),
+  approveProfile: (code, data) => api.post(`/admin/staging/profiles/${code}/approve`, data),
+  rejectProfile: (code, data) => api.post(`/admin/staging/profiles/${code}/reject`, data),
+  archiveProfile: (code, data) => api.post(`/admin/staging/profiles/${code}/archive`, data),
+  getProfileAuditHistory: (code) => api.get(`/admin/staging/profiles/${code}/audit`)
 };
 
 export default api;

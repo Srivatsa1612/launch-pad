@@ -8,7 +8,8 @@ import {
   ComputerDesktopIcon,
   Cog6ToothIcon,
   EnvelopeIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
 
 const AdminDashboard = () => {
@@ -56,6 +57,21 @@ const AdminDashboard = () => {
             <p className="text-dark-400 text-sm">Enter customer details before sending invitation</p>
             <div className="mt-4 text-primary-400 text-sm group-hover:translate-x-1 transition-transform">
               Create Profile →
+            </div>
+          </a>
+
+          {/* Profile Review & Approval */}
+          <a href="/admin/profile-review" className="card hover:border-primary-500 transition-all group border-green-500/50 bg-gradient-to-br from-green-900/20 to-dark-900">
+            <div className="flex items-center justify-between mb-4">
+              <CheckCircleIcon className="w-8 h-8 text-green-400" />
+              <span className="text-xs bg-yellow-600 text-white px-2 py-1 rounded-full font-semibold">
+                REVIEW
+              </span>
+            </div>
+            <h3 className="text-xl font-semibold mb-2">Profile Review</h3>
+            <p className="text-dark-400 text-sm">Approve pre-setup profiles before sending invitations</p>
+            <div className="mt-4 text-green-400 text-sm group-hover:translate-x-1 transition-transform">
+              Review Queue →
             </div>
           </a>
 
