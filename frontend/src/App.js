@@ -1,6 +1,9 @@
 // App.js
 import React, { useState, useEffect } from 'react';
 import { WizardProvider, useWizard } from './context/WizardContext';
+import { ToastProvider } from './components/Toast';
+import ErrorBoundary from './components/ErrorBoundary';
+import PageTransition from './components/PageTransition';
 import ProgressBar from './components/ProgressBar';
 import SplashScreen from './components/SplashScreen';
 import WelcomePage from './pages/WelcomePage';
@@ -288,8 +291,10 @@ const WizardContent = () => {
   return (
     <div className="min-h-screen bg-dark-950">
       {(currentStep < 7 || currentStep === 8) && <ProgressBar currentStep={currentStep} />}
-      <div className={currentStep < 7 || currentStep === 8 ? 'pt-24' : ''}>
-        {renderStep()}
+      <div className={currentStep < 7 || currentStep === 8 ? 'pt-28' : ''}>
+        <PageTransition stepKey={currentStep}>
+          {renderStep()}
+        </PageTransition>
       </div>
     </div>
   );
@@ -297,9 +302,13 @@ const WizardContent = () => {
 
 function App() {
   return (
-    <WizardProvider>
-      <WizardContent />
-    </WizardProvider>
+    <ErrorBoundary>
+      <ToastProvider>
+        <WizardProvider>
+          <WizardContent />
+        </WizardProvider>
+      </ToastProvider>
+    </ErrorBoundary>
   );
 }
 

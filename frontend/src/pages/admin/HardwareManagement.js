@@ -20,7 +20,6 @@ const HardwareManagement = () => {
       const options = Array.isArray(response.data.hardwareOptions) 
         ? response.data.hardwareOptions 
         : [];
-      console.log('Loaded hardware options:', options);
       setHardware(options);
     } catch (error) {
       console.error('Error loading config:', error);

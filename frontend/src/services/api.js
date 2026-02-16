@@ -10,10 +10,13 @@ const api = axios.create({
   },
 });
 
-// Add request interceptor for logging
+// Add request interceptor — attach admin API key for /admin/ routes
 api.interceptors.request.use(
   (config) => {
-    console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    const adminKey = process.env.REACT_APP_ADMIN_API_KEY;
+    if (adminKey && config.url?.includes('/admin')) {
+      config.headers['x-admin-api-key'] = adminKey;
+    }
     return config;
   },
   (error) => {
@@ -25,7 +28,6 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error('API Error:', error.response?.data || error.message);
     return Promise.reject(error);
   }
 );

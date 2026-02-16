@@ -4,11 +4,16 @@ const { body, param, validationResult } = require('express-validator');
 const wizardService = require('../services/wizardService');
 const configService = require('../services/configService');
 const sqlService = require('../services/sqlService');
+const emailService = require('../services/emailService');
+const adminAuth = require('../middleware/adminAuth');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
 const router = express.Router();
+
+// Protect all /admin/* routes with API key authentication
+router.use('/admin', adminAuth);
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -198,6 +203,25 @@ router.post('/sessions/:sessionId/complete',
     try {
       const { sessionId } = req.params;
       await wizardService.completeSession(sessionId);
+
+      // Send completion notification email to concierge (non-blocking)
+      try {
+        const sessionData = await wizardService.getSession(sessionId);
+        const companyName = sessionData?.session?.company_name || sessionData?.company_name || 'Customer';
+        const supportData = await wizardService.getSupportConnections(sessionId);
+        const conciergeEmail = supportData?.concierge_email || supportData?.conciergeEmail;
+        if (conciergeEmail) {
+          await emailService.sendCompletionNotification({
+            sessionId,
+            companyName,
+            conciergeEmail,
+          });
+        }
+      } catch (emailError) {
+        // Don't fail the completion if email fails
+        console.error('Email notification failed (non-critical):', emailError.message);
+      }
+
       res.json({ message: 'Session completed successfully' });
     } catch (error) {
       console.error('Error completing session:', error);
@@ -806,6 +830,21 @@ router.post('/admin/config/invitations', async (req, res) => {
         notes: notes || null
       }
     );
+
+    // Send invitation email if contact email is provided (non-blocking)
+    if (contactEmail) {
+      try {
+        await emailService.sendInvitation({
+          to: contactEmail,
+          companyName,
+          contactName: contactName || companyName,
+          invitationCode: invitationId,
+          concierge: 'M-Theory Concierge Team',
+        });
+      } catch (emailError) {
+        console.error('Invitation email failed (non-critical):', emailError.message);
+      }
+    }
 
     res.status(201).json({
       id: invitationId,

@@ -1,18 +1,20 @@
 // pages/ReviewPage.js
 import React, { useState, useEffect } from 'react';
 import { useWizard } from '../context/WizardContext';
-import { configAPI } from '../services/api';
+import { configAPI, adminAPI, sessionAPI } from '../services/api';
 import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon } from '@heroicons/react/24/solid';
 
 const ReviewPage = () => {
-  const { sessionId, prefilledData, nextStep, previousStep } = useWizard();
+  const { sessionId, prefilledData, invitationCode, companyName, createSession, nextStep, previousStep } = useWizard();
   const [editingSection, setEditingSection] = useState(null);
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
+  const [saveStatus, setSaveStatus] = useState(null); // 'success' | 'error' | null
+  const [saveMessage, setSaveMessage] = useState('');
   const [config, setConfig] = useState(null);
-  
+
   const [editedData, setEditedData] = useState(prefilledData || {});
 
   useEffect(() => {
@@ -33,21 +35,47 @@ const ReviewPage = () => {
 
   const handleScheduleMeeting = async () => {
     if (!scheduledDate || !scheduledTime) {
-      alert('Please select both date and time for the meeting');
+      setSaveStatus('error');
+      setSaveMessage('Please select both date and time for the meeting.');
       return;
     }
 
     try {
       setLoading(true);
-      // TODO: Call API to save updated data and schedule meeting
-      // await adminAPI.updateCustomerProfile(editedData);
-      // await scheduleAPI.createMeeting({ date: scheduledDate, time: scheduledTime, notes });
-      
-      // For now, just move to completion
-      nextStep();
+      setSaveStatus(null);
+
+      // 1. Save edited profile data back to the customer profile
+      if (invitationCode) {
+        await adminAPI.updateCustomerProfile(invitationCode, {
+          ...editedData,
+          scheduledDate,
+          scheduledTime,
+          meetingNotes: notes,
+          customerConfirmedAt: new Date().toISOString(),
+        });
+      }
+
+      // 2. Create a wizard session if one doesn't exist yet
+      if (!sessionId && invitationCode) {
+        const company = editedData.companyName || companyName;
+        await createSession(company, invitationCode);
+      }
+
+      setSaveStatus('success');
+      setSaveMessage('Your setup has been confirmed and meeting scheduled!');
+
+      // Brief delay so user sees success message, then proceed
+      setTimeout(() => {
+        nextStep();
+      }, 1000);
     } catch (error) {
-      console.error('Error scheduling meeting:', error);
-      alert('Failed to schedule meeting. Please try again.');
+      console.error('Error confirming setup:', error);
+      setSaveStatus('error');
+      setSaveMessage(
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        'Failed to confirm setup. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
@@ -328,9 +356,21 @@ const ReviewPage = () => {
 
         <div className="p-4 bg-primary-500/10 border border-primary-500/30 rounded-lg">
           <p className="text-sm text-dark-300">
-            ✨ Our concierge team will send you a calendar invite and be ready to help you get the most out of flowCUSTODIAN!
+            Our concierge team will send you a calendar invite and be ready to help you get the most out of flowCUSTODIAN!
           </p>
         </div>
+
+        {/* Save status feedback */}
+        {saveStatus === 'success' && (
+          <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+            <p className="text-sm text-green-400 font-medium">{saveMessage}</p>
+          </div>
+        )}
+        {saveStatus === 'error' && (
+          <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+            <p className="text-sm text-red-400 font-medium">{saveMessage}</p>
+          </div>
+        )}
       </div>
 
       {/* Action Buttons */}
