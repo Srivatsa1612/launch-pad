@@ -8,7 +8,6 @@ const ServiceOrderPage = () => {
   const { sessionId, nextStep, previousStep } = useWizard();
   const [loading, setLoading] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
-  const [serviceTiers, setServiceTiers] = useState([]);
   const [order, setOrder] = useState({
     serviceTier: 'Enterprise Elite',
     startDate: '2026-02-01',
@@ -22,7 +21,6 @@ const ServiceOrderPage = () => {
     const loadData = async () => {
       try {
         const tiersResponse = await configAPI.getServiceTiers();
-        setServiceTiers(tiersResponse.data);
 
         const orderResponse = await serviceOrderAPI.get(sessionId);
         if (orderResponse.data && Object.keys(orderResponse.data).length > 0) {

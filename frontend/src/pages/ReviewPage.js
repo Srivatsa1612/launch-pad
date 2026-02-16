@@ -1,8 +1,8 @@
 // pages/ReviewPage.js
 import React, { useState, useEffect } from 'react';
 import { useWizard } from '../context/WizardContext';
-import { configAPI, adminAPI, sessionAPI } from '../services/api';
-import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon } from '@heroicons/react/24/solid';
+import { configAPI, adminAPI } from '../services/api';
+import { ArrowLeftIcon, CheckCircleIcon } from '@heroicons/react/24/solid';
 
 const ReviewPage = () => {
   const { sessionId, prefilledData, invitationCode, companyName, createSession, nextStep, previousStep } = useWizard();

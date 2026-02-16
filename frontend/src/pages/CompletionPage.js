@@ -66,6 +66,7 @@ const CompletionPage = () => {
   useEffect(() => {
     // Mark wizard as complete
     completeWizard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Stagger the reveal animations

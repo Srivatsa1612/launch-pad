@@ -8,7 +8,6 @@ import {
   EyeIcon,
   PencilIcon,
   ArchiveBoxIcon,
-  ChatBubbleLeftIcon
 } from '@heroicons/react/24/solid';
 
 const ProfileReview = () => {
@@ -23,6 +22,7 @@ const ProfileReview = () => {
 
   useEffect(() => {
     loadProfiles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter]);
 
   const loadProfiles = async () => {

@@ -25,9 +25,7 @@ import CustomerPreSetup from './pages/admin/CustomerPreSetup';
 import ProfileReview from './pages/admin/ProfileReview';
 
 const WizardContent = () => {
-  const { currentStep, sessionId, createSession, invitationCode } = useWizard();
-  const [companyInput, setCompanyInput] = useState('');
-  const [loading, setLoading] = useState(false);
+  const { currentStep, sessionId, invitationCode } = useWizard();
   const [showDashboard, setShowDashboard] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [inviteInput, setInviteInput] = useState('');
@@ -83,20 +81,6 @@ const WizardContent = () => {
   if (showDashboard || window.location.pathname === '/dashboard') {
     return <DashboardPage />;
   }
-
-  const handleStart = async (e) => {
-    e.preventDefault();
-    if (!companyInput.trim()) return;
-
-    try {
-      setLoading(true);
-      await createSession(companyInput, invitationCode);
-    } catch (error) {
-      alert('Failed to start wizard. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleInviteSubmit = async (e) => {
     e.preventDefault();

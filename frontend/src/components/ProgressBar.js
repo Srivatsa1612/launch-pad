@@ -64,8 +64,6 @@ const ProgressBar = ({ currentStep }) => {
           {steps.map((step, index) => {
             const isCompleted = currentStep > step.num || isReview;
             const isCurrent = currentStep === step.num;
-            const isUpcoming = currentStep < step.num && !isReview;
-
             return (
               <React.Fragment key={step.num}>
                 {/* Step dot */}
