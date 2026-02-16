@@ -11,66 +11,66 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
-    
+    - uses: actions/checkout@v4
+
     - name: Setup Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: '18'
-        
+
     - name: Install backend dependencies
       working-directory: ./backend
       run: npm ci
-      
+
     - name: Run backend tests
       working-directory: ./backend
       run: npm test
-      
+
   frontend-build:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v3
-    
+    - uses: actions/checkout@v4
+
     - name: Setup Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: '18'
-        
+
     - name: Install frontend dependencies
       working-directory: ./frontend
       run: npm ci
-      
+
     - name: Build frontend
       working-directory: ./frontend
       run: npm run build
-      
+
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: frontend-build
         path: frontend/build/
-        
+
   lint:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v3
-    
+    - uses: actions/checkout@v4
+
     - name: Setup Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: '18'
-        
+
     - name: Install dependencies
       run: |
         cd backend && npm ci
         cd ../frontend && npm ci
-        
+
     - name: Lint backend
       working-directory: ./backend
-      run: npm run lint || echo "Linting not configured"
-      
+      run: npx eslint src/ --no-eslintrc --env node --env es2021 || true
+
     - name: Lint frontend
       working-directory: ./frontend
-      run: npm run lint || echo "Linting not configured"
+      run: npx eslint src/ --no-error-on-unmatched-pattern || true
