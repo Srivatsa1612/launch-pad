@@ -65,7 +65,9 @@ const CompletionPage = () => {
 
   useEffect(() => {
     // Mark wizard as complete
-    completeWizard();
+    completeWizard().catch((err) => {
+      console.error('Error completing wizard:', err);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

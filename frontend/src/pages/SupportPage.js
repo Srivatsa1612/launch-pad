@@ -13,7 +13,7 @@ const SupportPage = () => {
   const [leadership, setLeadership] = useState(null);
 
   useEffect(() => {
-    const loadConciergeData = async () => {
+    const loadData = async () => {
       try {
         const response = await configAPI.getConcierges();
         if (response.data && response.data.length > 0) {
@@ -21,12 +21,21 @@ const SupportPage = () => {
           const leader = response.data.find(c => c.role === 'leadership' || c.role === 'escalation');
           setLeadership(leader || null);
         }
+
+        if (sessionId) {
+          const savedResponse = await supportAPI.get(sessionId);
+          if (savedResponse.data && Object.keys(savedResponse.data).length > 0) {
+            if (savedResponse.data.conciergeName) {
+              setAcknowledged(true);
+            }
+          }
+        }
       } catch (error) {
-        console.error('Error loading concierge:', error);
+        console.error('Error loading support data:', error);
       }
     };
-    loadConciergeData();
-  }, []);
+    loadData();
+  }, [sessionId]);
 
   const handleSave = async () => {
     try {
@@ -215,7 +224,7 @@ const SupportPage = () => {
           Back
         </button>
         <button onClick={handleSave} disabled={!acknowledged || loading} className="btn-primary">
-          {loading ? 'Saving...' : 'All acknowledged — let\'s finalize'}
+          {loading ? 'Saving...' : 'Save & Finalize'}
           <ArrowRightIcon className="w-5 h-5" />
         </button>
       </div>
