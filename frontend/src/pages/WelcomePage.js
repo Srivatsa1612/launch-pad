@@ -19,7 +19,32 @@ const FeatureItem = ({ icon, title, description, delay }) => (
 );
 
 const WelcomePage = () => {
-  const { companyName, nextStep, loading, prefilledData } = useWizard();
+  const { companyName, nextStep, loading, prefilledData, invitationCode, createSession, sessionId } = useWizard();
+  const [companyInput, setCompanyInput] = React.useState('');
+  const [starting, setStarting] = React.useState(false);
+  const [startError, setStartError] = React.useState('');
+
+  const handleBegin = async () => {
+    // If session already exists, just move to next step
+    if (sessionId) {
+      nextStep();
+      return;
+    }
+
+    const company = companyName || companyInput.trim();
+    if (!company) return;
+
+    try {
+      setStarting(true);
+      setStartError('');
+      await createSession(company, invitationCode);
+      nextStep();
+    } catch (err) {
+      setStartError(err.response?.data?.message || err.response?.data?.error || 'Failed to start session. Please try again.');
+    } finally {
+      setStarting(false);
+    }
+  };
 
   // If loading prefilled data, show loading state
   if (loading) {
@@ -113,12 +138,33 @@ const WelcomePage = () => {
           </div>
         </div>
 
+        {!hasCompany && !sessionId && (
+          <div className="card max-w-md mx-auto animate-fade-in" style={{ animationDelay: '600ms' }}>
+            <label className="block text-sm font-medium mb-2 text-left">Company Name</label>
+            <input
+              type="text"
+              value={companyInput}
+              onChange={(e) => setCompanyInput(e.target.value)}
+              placeholder="Enter your company name"
+              className="input-field mb-4"
+              onKeyDown={(e) => e.key === 'Enter' && handleBegin()}
+            />
+          </div>
+        )}
+
+        {startError && (
+          <div className="max-w-md mx-auto p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
+            <p className="text-sm text-red-400">{startError}</p>
+          </div>
+        )}
+
         <div className="animate-fade-in" style={{ animationDelay: '600ms' }}>
           <button
-            onClick={nextStep}
+            onClick={handleBegin}
+            disabled={starting || (!companyName && !companyInput.trim() && !sessionId)}
             className="btn-primary text-lg"
           >
-            Begin Your Concierge Setup
+            {starting ? 'Setting up...' : 'Begin Your Concierge Setup'}
             <ArrowRightIcon className="w-5 h-5" />
           </button>
         </div>

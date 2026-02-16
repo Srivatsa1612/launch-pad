@@ -137,7 +137,7 @@ const KeyContactsPage = () => {
       if (error.response?.data) {
         if (error.response.data.errors && Array.isArray(error.response.data.errors)) {
           errorMessage = 'Validation errors:\n' +
-            error.response.data.errors.map(e => `- ${e.msg} (${e.param})`).join('\n');
+            error.response.data.errors.map(e => `- ${e.msg} (${e.path || e.param || 'unknown'})`).join('\n');
         } else if (error.response.data.details) {
           errorMessage = `Failed to save contacts: ${error.response.data.details}`;
         } else if (error.response.data.message) {
@@ -234,7 +234,7 @@ const KeyContactsPage = () => {
           disabled={loading}
           className="btn-primary"
         >
-          {loading ? 'Saving...' : 'Looks good — continue'}
+          {loading ? 'Saving...' : 'Save & Continue'}
           <ArrowRightIcon className="w-5 h-5" />
         </button>
       </div>
