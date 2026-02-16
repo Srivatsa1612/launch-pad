@@ -62,15 +62,20 @@ jobs:
       with:
         node-version: '18'
 
-    - name: Install dependencies
-      run: |
-        cd backend && npm ci
-        cd ../frontend && npm ci
+    - name: Install backend dependencies
+      working-directory: ./backend
+      run: npm ci
+
+    - name: Install frontend dependencies
+      working-directory: ./frontend
+      run: npm ci
 
     - name: Lint backend
       working-directory: ./backend
-      run: npx eslint src/ --no-eslintrc --env node --env es2021 || true
+      run: npx eslint src/ || true
+      continue-on-error: true
 
     - name: Lint frontend
       working-directory: ./frontend
-      run: npx eslint src/ --no-error-on-unmatched-pattern || true
+      run: npx eslint src/ || true
+      continue-on-error: true
