@@ -145,6 +145,19 @@ router.post('/sessions',
         });
       }
 
+      // If invite code is a full URL (user pasted URL), extract the actual code
+      try {
+        if (inviteCode.startsWith('http://') || inviteCode.startsWith('https://')) {
+          const parsedUrl = new URL(inviteCode);
+          const nestedCode = parsedUrl.searchParams.get('invite');
+          if (nestedCode) {
+            inviteCode = nestedCode;
+          }
+        }
+      } catch (e) {
+        // Not a valid URL, use as-is
+      }
+
       // Validate invitation code and get company name from it
       let invitation;
       try {

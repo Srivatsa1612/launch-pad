@@ -84,11 +84,24 @@ const WizardContent = () => {
 
   const handleInviteSubmit = async (e) => {
     e.preventDefault();
-    const trimmed = inviteInput.trim();
+    let trimmed = inviteInput.trim();
     if (!trimmed) return;
-    
+
+    // If user pasted a full URL, extract just the invite code from it
+    try {
+      if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+        const pastedUrl = new URL(trimmed);
+        const codeFromUrl = pastedUrl.searchParams.get('invite');
+        if (codeFromUrl) {
+          trimmed = codeFromUrl;
+        }
+      }
+    } catch (e) {
+      // Not a valid URL, treat as raw invite code
+    }
+
     // Redirect to URL with invite code so WizardContext picks it up
-    window.location.href = `/?invite=${trimmed}`;
+    window.location.href = `/?invite=${encodeURIComponent(trimmed)}`;
   };
 
   // Show prompt for invite code when none is provided and no session exists

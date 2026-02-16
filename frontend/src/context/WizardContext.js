@@ -32,7 +32,22 @@ export const WizardProvider = ({ children }) => {
     const validateAndRestoreSession = async () => {
       // Check URL for invite parameter FIRST - it should take precedence
       const params = new URLSearchParams(window.location.search);
-      const inviteCode = params.get('invite');
+      let inviteCode = params.get('invite');
+
+      // If the invite parameter is a full URL (user pasted URL as code), extract the actual code
+      if (inviteCode) {
+        try {
+          if (inviteCode.startsWith('http://') || inviteCode.startsWith('https://')) {
+            const nestedUrl = new URL(inviteCode);
+            const nestedCode = nestedUrl.searchParams.get('invite');
+            if (nestedCode) {
+              inviteCode = nestedCode;
+            }
+          }
+        } catch (e) {
+          // Not a valid URL, use as-is
+        }
+      }
 
       if (inviteCode) {
         // URL invite code takes precedence - clear any saved session and load this one
