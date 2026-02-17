@@ -5,7 +5,7 @@ import { configAPI, adminAPI, contactsAPI, serviceOrderAPI, hrSetupAPI, hardware
 import { ArrowLeftIcon, CheckCircleIcon } from '@heroicons/react/24/solid';
 
 const ReviewPage = () => {
-  const { sessionId, prefilledData, invitationCode, companyName, createSession, goToStep, previousStep } = useWizard();
+  const { sessionId, prefilledData, invitationCode, companyName, createSession, goToStep } = useWizard();
   const [editingSection, setEditingSection] = useState(null);
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
