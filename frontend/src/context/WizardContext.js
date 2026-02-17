@@ -118,22 +118,7 @@ export const WizardProvider = ({ children }) => {
     return null;
   };
 
-  // Check if prefilled data is "complete enough" to warrant jumping to ReviewPage
-  // If only basic info (company name, contact), use normal wizard flow
-  // If substantial data is pre-filled, jump to ReviewPage for confirmation
-  const isDataSubstantiallyPrefilled = (data) => {
-    if (!data) return false;
 
-    const hasServiceInfo = data.serviceTier && data.serviceTier.trim() !== '';
-    const hasHRInfo = data.hrisSystem && data.hrisSystem.trim() !== '';
-    const hasHardwareInfo = (data.deviceChoice && data.deviceChoice.trim() !== '') ||
-                           (data.giftChoice && data.giftChoice.trim() !== '');
-    const hasKeyContacts = (data.billingEmail || data.techEmail || data.emergencyEmail);
-
-    // If at least 2 of these major sections are filled, consider it substantially prefilled
-    const filledSections = [hasServiceInfo, hasHRInfo, hasHardwareInfo, hasKeyContacts].filter(Boolean).length;
-    return filledSections >= 2;
-  };
 
   // Save session to localStorage whenever it changes
   useEffect(() => {
