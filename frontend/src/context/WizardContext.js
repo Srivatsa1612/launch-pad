@@ -50,12 +50,33 @@ export const WizardProvider = ({ children }) => {
       }
 
       if (inviteCode) {
-        // URL invite code takes precedence - clear any saved session and load this one
+        setInvitationCode(inviteCode);
+
+        // Check if we already have a session for this same invite code (e.g. page refresh)
+        const savedInviteCode = localStorage.getItem('wizardInviteCode');
+        const savedSessionId = localStorage.getItem('wizardSessionId');
+
+        if (savedSessionId && savedInviteCode === inviteCode) {
+          // Same invite code - restore existing session (user refreshed the page)
+          try {
+            await sessionAPI.get(savedSessionId);
+            setSessionId(savedSessionId);
+            setCompanyName(localStorage.getItem('wizardCompanyName') || '');
+            setCurrentStep(parseInt(localStorage.getItem('wizardCurrentStep')) || 1);
+            // Still load prefilled data for context
+            await loadPrefilledData(inviteCode);
+            return;
+          } catch (err) {
+            // Session no longer exists, fall through to fresh start
+          }
+        }
+
+        // Fresh start - clear any old session data
         localStorage.removeItem('wizardSessionId');
         localStorage.removeItem('wizardCompanyName');
         localStorage.removeItem('wizardCurrentStep');
+        localStorage.setItem('wizardInviteCode', inviteCode);
 
-        setInvitationCode(inviteCode);
         const data = await loadPrefilledData(inviteCode);
 
         // Check if data is substantially prefilled
@@ -67,25 +88,12 @@ export const WizardProvider = ({ children }) => {
           setCurrentStep(1);
         }
       } else {
-        // No invite code in URL - try to restore saved session
-        const savedSessionId = localStorage.getItem('wizardSessionId');
-        const savedCompanyName = localStorage.getItem('wizardCompanyName');
-        const savedStep = localStorage.getItem('wizardCurrentStep');
-
-        if (savedSessionId) {
-          // Verify the session still exists in the database
-          try {
-            await sessionAPI.get(savedSessionId);
-            setSessionId(savedSessionId);
-            setCompanyName(savedCompanyName || '');
-            setCurrentStep(parseInt(savedStep) || 1);
-          } catch (err) {
-            // Session doesn't exist anymore, clear localStorage
-            localStorage.removeItem('wizardSessionId');
-            localStorage.removeItem('wizardCompanyName');
-            localStorage.removeItem('wizardCurrentStep');
-          }
-        }
+        // No invite code in URL - clear any leftover session data
+        // Customers must always access the wizard via an invite link
+        localStorage.removeItem('wizardSessionId');
+        localStorage.removeItem('wizardCompanyName');
+        localStorage.removeItem('wizardCurrentStep');
+        localStorage.removeItem('wizardInviteCode');
       }
     };
 
@@ -203,6 +211,7 @@ export const WizardProvider = ({ children }) => {
       localStorage.removeItem('wizardSessionId');
       localStorage.removeItem('wizardCompanyName');
       localStorage.removeItem('wizardCurrentStep');
+      localStorage.removeItem('wizardInviteCode');
     } catch (err) {
       setError(err.message);
       throw err;
@@ -224,6 +233,7 @@ export const WizardProvider = ({ children }) => {
     localStorage.removeItem('wizardSessionId');
     localStorage.removeItem('wizardCompanyName');
     localStorage.removeItem('wizardCurrentStep');
+    localStorage.removeItem('wizardInviteCode');
   };
 
   const updateFormData = (updates) => {
