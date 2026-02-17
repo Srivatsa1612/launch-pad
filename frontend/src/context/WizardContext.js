@@ -77,16 +77,10 @@ export const WizardProvider = ({ children }) => {
         localStorage.removeItem('wizardCurrentStep');
         localStorage.setItem('wizardInviteCode', inviteCode);
 
-        const data = await loadPrefilledData(inviteCode);
+        await loadPrefilledData(inviteCode);
 
-        // Check if data is substantially prefilled
-        // If yes, jump to ReviewPage (step 8) for confirmation
-        // If no, start at WelcomePage (step 1) with prefilled data in form fields
-        if (isDataSubstantiallyPrefilled(data)) {
-          setCurrentStep(8);
-        } else {
-          setCurrentStep(1);
-        }
+        // Always start at WelcomePage
+        setCurrentStep(1);
       } else {
         // No invite code in URL - clear any leftover session data
         // Customers must always access the wizard via an invite link
