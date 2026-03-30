@@ -11,7 +11,7 @@ const timeSlots = [
 ];
 
 const SchedulerPage = () => {
-  const { nextStep, previousStep, companyName } = useWizard();
+  const { nextStep, previousStep } = useWizard();
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [timezone, setTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone);
@@ -34,14 +34,6 @@ const SchedulerPage = () => {
   };
 
   const availableDates = getAvailableDates();
-
-  const formatDate = (date) => {
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
 
   const formatDateValue = (date) => {
     return date.toISOString().split('T')[0];
