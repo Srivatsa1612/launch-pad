@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <style>
+      .fc-pentagon { fill: #a855f7; }
+    </style>
+  </defs>
+  <!-- Pentagon shape representing flowCUSTODIAN -->
+  <polygon class="fc-pentagon" points="50,10 90,35 75,85 25,85 10,35"/>
+  <!-- Optional: Add a subtle inner design -->
+  <circle cx="50" cy="50" r="20" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.6"/>
+</svg>
