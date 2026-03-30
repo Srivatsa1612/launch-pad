@@ -32,45 +32,71 @@ export const WizardProvider = ({ children }) => {
   // Load session from localStorage and check for invite code on mount
   useEffect(() => {
     const validateAndRestoreSession = async () => {
+      // Check URL for invite parameter FIRST - it should take precedence
       const params = new URLSearchParams(window.location.search);
-      const inviteCode = params.get('invite');
+      let inviteCode = params.get('invite');
+
+      // If the invite parameter is a full URL (user pasted URL as code), extract the actual code
+      if (inviteCode) {
+        try {
+          if (inviteCode.startsWith('http://') || inviteCode.startsWith('https://')) {
+            const nestedUrl = new URL(inviteCode);
+            const nestedCode = nestedUrl.searchParams.get('invite');
+            if (nestedCode) {
+              inviteCode = nestedCode;
+            }
+          }
+        } catch (e) {
+          // Not a valid URL, use as-is
+        }
+      }
 
       if (inviteCode) {
-        localStorage.removeItem('wizardSessionId');
-        localStorage.removeItem('wizardCompanyName');
-        localStorage.removeItem('wizardCurrentStep');
-
         setInvitationCode(inviteCode);
-        const data = await loadPrefilledData(inviteCode);
 
-        if (isDataSubstantiallyPrefilled(data)) {
-          setCurrentStep(1); // Always start at welcome for launchPAD
-        } else {
-          setCurrentStep(1);
-        }
-      } else {
+        // Check if we already have a session for this same invite code (e.g. page refresh)
+        const savedInviteCode = localStorage.getItem('wizardInviteCode');
         const savedSessionId = localStorage.getItem('wizardSessionId');
-        const savedCompanyName = localStorage.getItem('wizardCompanyName');
-        const savedStep = localStorage.getItem('wizardCurrentStep');
 
-        if (savedSessionId) {
+        if (savedSessionId && savedInviteCode === inviteCode) {
+          // Same invite code - restore existing session (user refreshed the page)
           try {
             await sessionAPI.get(savedSessionId);
             setSessionId(savedSessionId);
-            setCompanyName(savedCompanyName || '');
-            setCurrentStep(parseInt(savedStep) || 1);
+            setCompanyName(localStorage.getItem('wizardCompanyName') || '');
+            setCurrentStep(parseInt(localStorage.getItem('wizardCurrentStep')) || 1);
+            // Still load prefilled data for context
+            await loadPrefilledData(inviteCode);
+            return;
           } catch (err) {
-            localStorage.removeItem('wizardSessionId');
-            localStorage.removeItem('wizardCompanyName');
-            localStorage.removeItem('wizardCurrentStep');
+            // Session no longer exists, fall through to fresh start
           }
         }
+
+        // Fresh start - clear any old session data
+        localStorage.removeItem('wizardSessionId');
+        localStorage.removeItem('wizardCompanyName');
+        localStorage.removeItem('wizardCurrentStep');
+        localStorage.setItem('wizardInviteCode', inviteCode);
+
+        await loadPrefilledData(inviteCode);
+
+        // Always start at WelcomePage
+        setCurrentStep(1);
+      } else {
+        // No invite code in URL - clear any leftover session data
+        // Customers must always access the wizard via an invite link
+        localStorage.removeItem('wizardSessionId');
+        localStorage.removeItem('wizardCompanyName');
+        localStorage.removeItem('wizardCurrentStep');
+        localStorage.removeItem('wizardInviteCode');
       }
     };
 
     validateAndRestoreSession();
   }, []);
 
+  // Load customer pre-setup profile from invitation code
   const loadPrefilledData = async (code) => {
     try {
       setLoading(true);
@@ -87,26 +113,14 @@ export const WizardProvider = ({ children }) => {
         return response.data;
       }
     } catch (err) {
-      setError(null);
+      setError(null); // Don't show error for missing invites
     } finally {
       setLoading(false);
     }
     return null;
   };
 
-  const isDataSubstantiallyPrefilled = (data) => {
-    if (!data) return false;
-
-    const hasServiceInfo = data.serviceTier && data.serviceTier.trim() !== '';
-    const hasHRInfo = data.hrisSystem && data.hrisSystem.trim() !== '';
-    const hasHardwareInfo = (data.deviceChoice && data.deviceChoice.trim() !== '') ||
-                           (data.giftChoice && data.giftChoice.trim() !== '');
-    const hasKeyContacts = (data.billingEmail || data.techEmail || data.emergencyEmail);
-
-    const filledSections = [hasServiceInfo, hasHRInfo, hasHardwareInfo, hasKeyContacts].filter(Boolean).length;
-    return filledSections >= 2;
-  };
-
+  // Save session to localStorage whenever it changes
   useEffect(() => {
     if (sessionId) {
       localStorage.setItem('wizardSessionId', sessionId);
@@ -120,6 +134,7 @@ export const WizardProvider = ({ children }) => {
       setLoading(true);
       setError(null);
       const response = await sessionAPI.create(company, inviteCode);
+      // Backend returns session_id (snake_case), we need sessionId (camelCase)
       const sessionIdValue = response.data.sessionId || response.data.session_id;
       if (!sessionIdValue) {
         throw new Error('No session ID returned from server');

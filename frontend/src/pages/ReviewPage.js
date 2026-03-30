@@ -1,11 +1,11 @@
 // pages/ReviewPage.js
 import React, { useState, useEffect } from 'react';
 import { useWizard } from '../context/WizardContext';
-import { configAPI, adminAPI, sessionAPI } from '../services/api';
-import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon } from '@heroicons/react/24/solid';
+import { configAPI, adminAPI, contactsAPI, serviceOrderAPI, hrSetupAPI, hardwareAPI, supportAPI } from '../services/api';
+import { ArrowLeftIcon, CheckCircleIcon } from '@heroicons/react/24/solid';
 
 const ReviewPage = () => {
-  const { sessionId, prefilledData, invitationCode, companyName, createSession, nextStep, previousStep } = useWizard();
+  const { sessionId, prefilledData, invitationCode, companyName, createSession, goToStep } = useWizard();
   const [editingSection, setEditingSection] = useState(null);
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
@@ -44,30 +44,110 @@ const ReviewPage = () => {
       setLoading(true);
       setSaveStatus(null);
 
-      // 1. Save edited profile data back to the customer profile
+      // 1. Try to save edited profile back (may fail without admin key - that's OK)
       if (invitationCode) {
-        await adminAPI.updateCustomerProfile(invitationCode, {
-          ...editedData,
-          scheduledDate,
-          scheduledTime,
-          meetingNotes: notes,
-          customerConfirmedAt: new Date().toISOString(),
-        });
+        try {
+          await adminAPI.updateCustomerProfile(invitationCode, {
+            ...editedData,
+            scheduledDate,
+            scheduledTime,
+            meetingNotes: notes,
+            customerConfirmedAt: new Date().toISOString(),
+          });
+        } catch (err) {
+          console.warn('Could not update customer profile (admin API):', err);
+        }
       }
 
       // 2. Create a wizard session if one doesn't exist yet
-      if (!sessionId && invitationCode) {
+      let activeSessionId = sessionId;
+      if (!activeSessionId && invitationCode) {
         const company = editedData.companyName || companyName;
-        await createSession(company, invitationCode);
+        const result = await createSession(company, invitationCode);
+        activeSessionId = result.sessionId || result.session_id;
+      }
+
+      // 3. Save all pre-filled data to wizard database tables
+      if (activeSessionId) {
+        const savePromises = [];
+
+        // Save contacts
+        if (editedData.billingName || editedData.billingEmail || editedData.techName || editedData.techEmail || editedData.emergencyName || editedData.emergencyEmail) {
+          savePromises.push(
+            contactsAPI.save(activeSessionId, {
+              billing: {
+                name: editedData.billingName || '',
+                email: editedData.billingEmail || '',
+                phone: editedData.billingPhone || ''
+              },
+              tech: {
+                name: editedData.techName || '',
+                email: editedData.techEmail || '',
+                phone: editedData.techPhone || ''
+              },
+              emergency: {
+                name: editedData.emergencyName || '',
+                email: editedData.emergencyEmail || '',
+                phone: editedData.emergencyPhone || ''
+              }
+            })
+          );
+        }
+
+        // Save service order
+        if (editedData.serviceTier) {
+          savePromises.push(
+            serviceOrderAPI.save(activeSessionId, {
+              serviceTier: editedData.serviceTier,
+              startDate: editedData.startDate || new Date().toISOString().split('T')[0],
+              contractTerm: parseInt(editedData.contractTerm) || 12,
+              monthlyCommitment: 0,
+              includedFeatures: [],
+              confirmationAccepted: true
+            })
+          );
+        }
+
+        // Save HR setup
+        if (editedData.hrisSystem || editedData.updateMethod) {
+          savePromises.push(
+            hrSetupAPI.save(activeSessionId, {
+              hrisSystem: editedData.hrisSystem || '',
+              updateMethod: editedData.updateMethod || ''
+            })
+          );
+        }
+
+        // Save hardware
+        if (editedData.deviceChoice || editedData.giftChoice) {
+          savePromises.push(
+            hardwareAPI.save(activeSessionId, {
+              deviceProcurement: editedData.deviceChoice || '',
+              welcomeGift: editedData.giftChoice || ''
+            })
+          );
+        }
+
+        // Save support info
+        savePromises.push(
+          supportAPI.save(activeSessionId, {
+            conciergeName: 'Not Assigned',
+            conciergeEmail: '',
+            conciergePhone: '',
+            supportProcedureAcknowledged: true
+          })
+        );
+
+        await Promise.all(savePromises);
       }
 
       setSaveStatus('success');
       setSaveMessage('Your setup has been confirmed and meeting scheduled!');
 
-      // Brief delay so user sees success message, then proceed
+      // Go directly to CompletionPage (step 7)
       setTimeout(() => {
-        nextStep();
-      }, 1000);
+        goToStep(7);
+      }, 1500);
     } catch (error) {
       console.error('Error confirming setup:', error);
       setSaveStatus('error');
@@ -376,7 +456,7 @@ const ReviewPage = () => {
       {/* Action Buttons */}
       <div className="flex gap-4 mb-12">
         <button
-          onClick={previousStep}
+          onClick={() => goToStep(1)}
           className="btn-secondary flex items-center gap-2"
         >
           <ArrowLeftIcon className="w-5 h-5" />

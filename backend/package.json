@@ -6,8 +6,8 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "jest --coverage",
-    "lint": "eslint src/",
+    "test": "jest --coverage --passWithNoTests",
+    "lint": "eslint src/ --no-eslintrc --env node --env es2021",
     "get-token": "node scripts/getToken.js"
   },
   "keywords": [

@@ -75,16 +75,24 @@ const HardwarePage = () => {
   const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
-    const loadConfig = async () => {
+    const loadData = async () => {
       try {
-        const response = await configAPI.getAll();
-        setHardwareOptions(Array.isArray(response.data.hardwareOptions) ? response.data.hardwareOptions : []);
+        const configResponse = await configAPI.getAll();
+        setHardwareOptions(Array.isArray(configResponse.data.hardwareOptions) ? configResponse.data.hardwareOptions : []);
+
+        if (sessionId) {
+          const savedResponse = await hardwareAPI.get(sessionId);
+          if (savedResponse.data && Object.keys(savedResponse.data).length > 0) {
+            if (savedResponse.data.deviceProcurement) setProcurement(savedResponse.data.deviceProcurement);
+            if (savedResponse.data.welcomeGift) setGift(savedResponse.data.welcomeGift);
+          }
+        }
       } catch (error) {
-        console.error('Error loading hardware config:', error);
+        console.error('Error loading hardware data:', error);
       }
     };
-    loadConfig();
-  }, []);
+    loadData();
+  }, [sessionId]);
 
   const isValid = () => {
     return procurement && gift;
@@ -243,7 +251,7 @@ const HardwarePage = () => {
           Back
         </button>
         <button onClick={handleSave} disabled={!isValid() || loading} className="btn-primary">
-          {loading ? 'Saving...' : 'Selections complete — next'}
+          {loading ? 'Saving...' : 'Save & Continue'}
           <ArrowRightIcon className="w-5 h-5" />
         </button>
       </div>

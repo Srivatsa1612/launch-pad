@@ -13,19 +13,28 @@ const HRSetupPage = () => {
   const [hrisSystems, setHrisSystems] = useState([]);
   const [updateMethods, setUpdateMethods] = useState([]);
   const [dragActive, setDragActive] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
-    const loadConfig = async () => {
+    const loadData = async () => {
       try {
-        const response = await configAPI.getAll();
-        setHrisSystems(response.data.hrisSystems || []);
-        setUpdateMethods(response.data.updateMethods || []);
+        const configResponse = await configAPI.getAll();
+        setHrisSystems(configResponse.data.hrisSystems || []);
+        setUpdateMethods(configResponse.data.updateMethods || []);
+
+        if (sessionId) {
+          const savedResponse = await hrSetupAPI.get(sessionId);
+          if (savedResponse.data && Object.keys(savedResponse.data).length > 0) {
+            if (savedResponse.data.hrisSystem) setHrisSystem(savedResponse.data.hrisSystem);
+            if (savedResponse.data.updateMethod) setUpdateMethod(savedResponse.data.updateMethod);
+          }
+        }
       } catch (error) {
-        console.error('Error loading HR config:', error);
+        console.error('Error loading HR data:', error);
       }
     };
-    loadConfig();
-  }, []);
+    loadData();
+  }, [sessionId]);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -65,7 +74,11 @@ const HRSetupPage = () => {
       nextStep();
     } catch (error) {
       console.error('Error saving HR setup:', error);
-      alert('Failed to save HR setup. Please try again.');
+      setSaveError(
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        'Failed to save HR setup. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
@@ -194,13 +207,19 @@ const HRSetupPage = () => {
         </div>
       </div>
 
+      {saveError && (
+        <div className="mt-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg animate-fade-in">
+          <p className="text-sm text-red-400 font-medium">{saveError}</p>
+        </div>
+      )}
+
       <div className="mt-12 flex justify-between">
         <button onClick={previousStep} className="btn-secondary">
           <ArrowLeftIcon className="w-5 h-5" />
           Back
         </button>
         <button onClick={handleSave} disabled={!hrisSystem || !updateMethod || loading} className="btn-primary">
-          {loading ? 'Saving...' : 'Uploaded & ready — continue'}
+          {loading ? 'Saving...' : 'Save & Continue'}
           <ArrowRightIcon className="w-5 h-5" />
         </button>
       </div>

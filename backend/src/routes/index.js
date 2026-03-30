@@ -130,43 +130,65 @@ router.post('/admin/initialize-db', async (req, res) => {
 
 // Create new session
 router.post('/sessions',
-  body('companyName').notEmpty().trim().escape(),
+  body('companyName').optional().trim().escape(),
   body('inviteCode').optional().isString().trim(),
   validate,
   async (req, res) => {
     try {
-      const { companyName, inviteCode } = req.body;
-      
+      let { companyName, inviteCode } = req.body;
+
       // Require invitation code for session creation
       if (!inviteCode) {
-        return res.status(403).json({ 
+        return res.status(403).json({
           error: 'Invitation code required',
           message: 'Session creation requires a valid invitation code'
         });
       }
 
-      // Validate invitation code exists
+      // If invite code is a full URL (user pasted URL), extract the actual code
+      try {
+        if (inviteCode.startsWith('http://') || inviteCode.startsWith('https://')) {
+          const parsedUrl = new URL(inviteCode);
+          const nestedCode = parsedUrl.searchParams.get('invite');
+          if (nestedCode) {
+            inviteCode = nestedCode;
+          }
+        }
+      } catch (e) {
+        // Not a valid URL, use as-is
+      }
+
+      // Validate invitation code and get company name from it
+      let invitation;
       try {
         const invitations = await configService.getInvitations();
-        const invitation = invitations.find(inv => inv.code === inviteCode);
+        invitation = invitations.find(inv => inv.code === inviteCode);
         if (!invitation) {
-          return res.status(403).json({ 
+          return res.status(403).json({
             error: 'Invalid invitation',
             message: 'The provided invitation code is invalid or has expired'
           });
         }
       } catch (error) {
-        return res.status(500).json({ 
+        return res.status(500).json({
           error: 'Validation error',
           message: 'Could not validate invitation'
         });
+      }
+
+      // Use invitation's company name if frontend didn't provide one
+      if (!companyName && invitation.companyName) {
+        companyName = invitation.companyName;
+      }
+      if (!companyName) {
+        companyName = 'Customer';
       }
 
       const session = await wizardService.createSession(companyName);
       res.status(201).json(session);
     } catch (error) {
       console.error('Error creating session:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Failed to create session',
         details: error.message,
         timestamp: new Date().toISOString()

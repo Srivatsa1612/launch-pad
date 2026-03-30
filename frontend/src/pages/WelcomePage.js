@@ -13,7 +13,29 @@ const BulletItem = ({ text, delay }) => (
 );
 
 const WelcomePage = () => {
-  const { companyName, nextStep, loading, prefilledData } = useWizard();
+  const { companyName, nextStep, loading, invitationCode, createSession, sessionId } = useWizard();
+  const [starting, setStarting] = React.useState(false);
+  const [startError, setStartError] = React.useState('');
+
+  const handleBegin = async () => {
+    // If session already exists, just move to next step
+    if (sessionId) {
+      nextStep();
+      return;
+    }
+
+    try {
+      setStarting(true);
+      setStartError('');
+      // Backend will look up company name from invitation if not provided
+      await createSession(companyName || '', invitationCode);
+      nextStep();
+    } catch (err) {
+      setStartError(err.response?.data?.message || err.response?.data?.error || 'Failed to start session. Please try again.');
+    } finally {
+      setStarting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -93,13 +115,21 @@ const WelcomePage = () => {
           </div>
         </div>
 
+        {/* Error message */}
+        {startError && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 max-w-2xl mx-auto">
+            <p className="text-sm text-red-400">{startError}</p>
+          </div>
+        )}
+
         {/* CTA Button */}
         <div className="animate-fade-in" style={{ animationDelay: '700ms' }}>
           <button
-            onClick={nextStep}
+            onClick={handleBegin}
+            disabled={starting}
             className="btn-primary text-lg px-10 py-4"
           >
-            Go for Launch!
+            {starting ? 'Starting...' : 'Go for Launch!'}
             <svg className="w-5 h-5 ml-2 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11l-3-3m0 0l-3 3m3-3v8M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-4l-2-2H9L7 7H5a2 2 0 00-2 2z" />
             </svg>

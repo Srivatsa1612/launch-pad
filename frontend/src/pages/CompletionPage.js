@@ -8,7 +8,10 @@ const CompletionPage = () => {
   const [showContent, setShowContent] = useState(false);
 
   useEffect(() => {
-    completeWizard();
+    completeWizard().catch((err) => {
+      console.error('Error completing wizard:', err);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -31,6 +34,7 @@ const CompletionPage = () => {
             <div className="w-28 h-28 rounded-full bg-green-600/20 flex items-center justify-center animate-scale-in">
               <CheckCircleIcon className="w-18 h-18 text-green-500" style={{ width: '72px', height: '72px' }} />
             </div>
+            {/* Pulse ring */}
             <div className="absolute inset-0 rounded-full border-2 border-green-500/30 animate-ping" style={{ animationDuration: '2s' }} />
           </div>
         </div>

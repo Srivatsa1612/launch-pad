@@ -57,6 +57,7 @@ const ProgressBar = ({ currentStep }) => {
 
             return (
               <React.Fragment key={step.num}>
+                {/* Step dot */}
                 <div className="flex flex-col items-center" style={{ flex: '0 0 auto' }}>
                   <div
                     className={`
@@ -77,6 +78,7 @@ const ProgressBar = ({ currentStep }) => {
                       step.icon
                     )}
                   </div>
+                  {/* Label - only show for current and completed on larger screens */}
                   <span
                     className={`
                       text-[10px] mt-1 font-medium hidden sm:block transition-colors
@@ -87,6 +89,7 @@ const ProgressBar = ({ currentStep }) => {
                   </span>
                 </div>
 
+                {/* Connector line */}
                 {index < steps.length - 1 && (
                   <div className="flex-1 h-0.5 mx-1 rounded-full transition-all duration-500" style={{ minWidth: '12px' }}>
                     <div

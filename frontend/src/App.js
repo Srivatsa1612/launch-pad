@@ -22,20 +22,21 @@ import CustomerPreSetup from './pages/admin/CustomerPreSetup';
 import ProfileReview from './pages/admin/ProfileReview';
 
 const WizardContent = () => {
-  const { currentStep, sessionId, createSession, invitationCode } = useWizard();
-  const [companyInput, setCompanyInput] = useState('');
-  const [loading, setLoading] = useState(false);
+  const { currentStep, sessionId, invitationCode } = useWizard();
   const [showDashboard, setShowDashboard] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [inviteInput, setInviteInput] = useState('');
 
+  // Show splash screen for 2 seconds on initial load
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowSplash(false);
     }, 2000);
+
     return () => clearTimeout(timer);
   }, []);
 
+  // Check URL for dashboard route
   React.useEffect(() => {
     if (window.location.pathname === '/dashboard') {
       setShowDashboard(true);
@@ -68,33 +69,36 @@ const WizardContent = () => {
     return <AdminDashboard />;
   }
 
+  // Show splash screen on initial load
   if (showSplash) {
     return <SplashScreen />;
   }
 
+  // Show dashboard if requested
   if (showDashboard || window.location.pathname === '/dashboard') {
     return <DashboardPage />;
   }
 
-  const handleStart = async (e) => {
-    e.preventDefault();
-    if (!companyInput.trim()) return;
-
-    try {
-      setLoading(true);
-      await createSession(companyInput, invitationCode);
-    } catch (error) {
-      alert('Failed to start. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleInviteSubmit = async (e) => {
     e.preventDefault();
-    const trimmed = inviteInput.trim();
+    let trimmed = inviteInput.trim();
     if (!trimmed) return;
-    window.location.href = `/?invite=${trimmed}`;
+
+    // If user pasted a full URL, extract just the invite code from it
+    try {
+      if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+        const pastedUrl = new URL(trimmed);
+        const codeFromUrl = pastedUrl.searchParams.get('invite');
+        if (codeFromUrl) {
+          trimmed = codeFromUrl;
+        }
+      }
+    } catch (e) {
+      // Not a valid URL, treat as raw invite code
+    }
+
+    // Redirect to URL with invite code so WizardContext picks it up
+    window.location.href = `/?invite=${encodeURIComponent(trimmed)}`;
   };
 
   // Show prompt for invite code when none is provided and no session exists

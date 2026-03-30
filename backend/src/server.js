@@ -8,6 +8,7 @@ const config = require('./config');
 const routes = require('./routes');
 const sqlService = require('./services/sqlService');
 const multer = require('multer');
+const path = require('path');
 
 const app = express();
 
@@ -38,9 +39,11 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: 'Route not found' });
+// Serve React frontend in production
+const frontendBuildPath = path.join(__dirname, '../../frontend/build');
+app.use(express.static(frontendBuildPath));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(frontendBuildPath, 'index.html'));
 });
 
 // Initialize database on startup

@@ -8,7 +8,7 @@ const ServiceOrderPage = () => {
   const { sessionId, nextStep, previousStep } = useWizard();
   const [loading, setLoading] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
-  const [serviceTiers, setServiceTiers] = useState([]);
+  const [saveError, setSaveError] = useState('');
   const [order, setOrder] = useState({
     serviceTier: 'Enterprise Elite',
     startDate: '2026-02-01',
@@ -22,7 +22,6 @@ const ServiceOrderPage = () => {
     const loadData = async () => {
       try {
         const tiersResponse = await configAPI.getServiceTiers();
-        setServiceTiers(tiersResponse.data);
 
         const orderResponse = await serviceOrderAPI.get(sessionId);
         if (orderResponse.data && Object.keys(orderResponse.data).length > 0) {
@@ -56,7 +55,11 @@ const ServiceOrderPage = () => {
       nextStep();
     } catch (error) {
       console.error('Error saving service order:', error);
-      alert('Failed to save service order. Please try again.');
+      setSaveError(
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        'Failed to save service order. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
@@ -179,6 +182,12 @@ const ServiceOrderPage = () => {
         </label>
       </div>
 
+      {saveError && (
+        <div className="mt-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg animate-fade-in">
+          <p className="text-sm text-red-400 font-medium">{saveError}</p>
+        </div>
+      )}
+
       <div className="mt-12 flex justify-between">
         <button onClick={previousStep} className="btn-secondary">
           <ArrowLeftIcon className="w-5 h-5" />
@@ -190,7 +199,7 @@ const ServiceOrderPage = () => {
           disabled={!confirmed || loading}
           className="btn-primary"
         >
-          {loading ? 'Saving...' : 'Confirmed — next please'}
+          {loading ? 'Saving...' : 'Save & Continue'}
           <ArrowRightIcon className="w-5 h-5" />
         </button>
       </div>
