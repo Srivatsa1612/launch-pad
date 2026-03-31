@@ -30,6 +30,11 @@ const PrerequisitesPage = () => {
     },
   });
 
+  // Custom data source entries
+  const [customApiSource, setCustomApiSource] = useState('');
+  const [customSyslogSource, setCustomSyslogSource] = useState('');
+  const [customAgentSource, setCustomAgentSource] = useState('');
+
   // VM Resource requirements acknowledgment
   const [vmRequirementsAcknowledged, setVmRequirementsAcknowledged] = useState(false);
 
@@ -259,6 +264,15 @@ const PrerequisitesPage = () => {
                 checked={dataSources.api.googleWorkspace}
                 onChange={() => handleDataSourceChange('api', 'googleWorkspace')}
               />
+              <div className="pt-2">
+                <input
+                  type="text"
+                  value={customApiSource}
+                  onChange={(e) => setCustomApiSource(e.target.value)}
+                  placeholder="Other API source..."
+                  className="input-field text-sm py-2"
+                />
+              </div>
             </div>
           </div>
 
@@ -286,6 +300,15 @@ const PrerequisitesPage = () => {
                 checked={dataSources.syslog.activeDirectory}
                 onChange={() => handleDataSourceChange('syslog', 'activeDirectory')}
               />
+              <div className="pt-2">
+                <input
+                  type="text"
+                  value={customSyslogSource}
+                  onChange={(e) => setCustomSyslogSource(e.target.value)}
+                  placeholder="Other syslog source..."
+                  className="input-field text-sm py-2"
+                />
+              </div>
             </div>
           </div>
 
@@ -303,6 +326,15 @@ const PrerequisitesPage = () => {
                 checked={dataSources.agentSensor.windowsServers}
                 onChange={() => handleDataSourceChange('agentSensor', 'windowsServers')}
               />
+              <div className="pt-2">
+                <input
+                  type="text"
+                  value={customAgentSource}
+                  onChange={(e) => setCustomAgentSource(e.target.value)}
+                  placeholder="Other agent/sensor..."
+                  className="input-field text-sm py-2"
+                />
+              </div>
             </div>
           </div>
         </div>
