@@ -58,11 +58,7 @@ const WelcomePage = () => {
       <div className="max-w-3xl w-full text-center space-y-8 relative z-10">
         {/* M-Theory Logo */}
         <div className="flex justify-center animate-scale-in">
-          <div className="w-20 h-20 rounded-2xl bg-primary-600/20 flex items-center justify-center">
-            <svg className="w-10 h-10 text-primary-400" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" />
-            </svg>
-          </div>
+          <img src="/images/mtheory-logo.png" alt="M-Theory" className="h-20 w-auto" />
         </div>
 
         {/* Title */}

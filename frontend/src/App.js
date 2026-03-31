@@ -108,9 +108,7 @@ const WizardContent = () => {
         <div className="max-w-md w-full">
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-2 mb-4">
-              <svg className="w-12 h-12 text-primary-500" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" />
-              </svg>
+              <img src="/images/mtheory-logo.png" alt="M-Theory" className="h-16 w-auto" />
             </div>
             <p className="text-3xl font-bold mb-1">
               <span className="text-primary-400">launch</span><span className="italic">PAD</span>

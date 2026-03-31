@@ -36,9 +36,7 @@ const ProgressBar = ({ currentStep }) => {
         {/* Top row: logo + status */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <svg className="w-7 h-7 text-primary-500" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z" />
-            </svg>
+            <img src="/images/mtheory-logo.png" alt="M-Theory" className="h-8 w-auto" />
             <span className="text-lg font-bold">
               <span className="text-primary-400">launch</span><span className="italic">PAD</span>
             </span>
