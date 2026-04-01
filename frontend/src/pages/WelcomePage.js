@@ -63,7 +63,6 @@ const WelcomePage = () => {
 
         {/* Title */}
         <div className="animate-fade-in">
-          <p className="text-sm font-semibold text-primary-400 uppercase tracking-widest mb-3">M-Theory Group</p>
           <h1 className="text-5xl font-bold mb-4">
             Welcome to <span className="text-primary-400">launchPAD</span>
           </h1>

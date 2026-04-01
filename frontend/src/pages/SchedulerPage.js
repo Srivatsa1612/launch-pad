@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useWizard } from '../context/WizardContext';
 import { ArrowLeftIcon, ArrowRightIcon, CalendarIcon } from '@heroicons/react/24/solid';
 
-const BOOKINGS_URL = 'https://outlook.office365.com/owa/calendar/mBRANEPROOFKickoff@m-theorygrp.com/bookings/';
+const BOOKINGS_URL = 'https://outlook.office365.com/owa/calendar/mBRANEPROOFKickoff1@m-theorygrp.com/bookings/';
 
 const SchedulerPage = () => {
   const { nextStep, previousStep } = useWizard();
