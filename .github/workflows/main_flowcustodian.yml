@@ -36,9 +36,11 @@ jobs:
       - name: Create deployment package
         run: |
           # Remove frontend source (only need the build output)
-          rm -rf frontend/src frontend/node_modules
+          rm -rf frontend/src frontend/node_modules frontend/public
           # Remove unnecessary files
-          rm -rf .git .github frontend/public/images/MTG-Splash.png
+          rm -rf .git .github
+          # Verify logo exists in build
+          ls -la frontend/build/images/ || echo "No images dir in build"
           # Zip for faster upload
           zip -r deploy.zip . -x "*.git*"
 

@@ -114,7 +114,6 @@ const WizardContent = () => {
               <span className="text-primary-400">launch<span className="font-bold">PAD</span></span>
             </p>
             <p className="text-sm text-dark-400">Service Onboarding Launch Orchestrator</p>
-            <p className="text-xs text-dark-500 mt-1">by M-Theory Group</p>
           </div>
 
           <div className="card space-y-6 text-center">
