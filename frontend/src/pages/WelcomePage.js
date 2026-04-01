@@ -64,7 +64,7 @@ const WelcomePage = () => {
         {/* Title */}
         <div className="animate-fade-in">
           <h1 className="text-5xl font-bold mb-4">
-            Welcome to <span className="text-primary-400">launchPAD</span>
+            Welcome to <span className="text-primary-400">launch<span className="font-bold">PAD</span></span>
           </h1>
           <p className="text-xl text-dark-300">
             Your Service Onboarding Launch Orchestrator.

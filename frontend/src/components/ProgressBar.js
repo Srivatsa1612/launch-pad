@@ -38,7 +38,7 @@ const ProgressBar = ({ currentStep }) => {
           <div className="flex items-center gap-2">
             <img src="/images/mtheory-logo.png" alt="M-Theory" className="h-8 w-auto" />
             <span className="text-lg font-bold">
-              <span className="text-primary-400">launch</span><span className="italic">PAD</span>
+              <span className="text-primary-400">launch<span className="font-bold">PAD</span></span>
             </span>
           </div>
 

@@ -111,7 +111,7 @@ const WizardContent = () => {
               <img src="/images/mtheory-logo.png" alt="M-Theory" className="h-16 w-auto" />
             </div>
             <p className="text-3xl font-bold mb-1">
-              <span className="text-primary-400">launch</span><span className="italic">PAD</span>
+              <span className="text-primary-400">launch<span className="font-bold">PAD</span></span>
             </p>
             <p className="text-sm text-dark-400">Service Onboarding Launch Orchestrator</p>
             <p className="text-xs text-dark-500 mt-1">by M-Theory Group</p>

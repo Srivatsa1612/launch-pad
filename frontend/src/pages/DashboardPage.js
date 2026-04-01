@@ -78,7 +78,7 @@ const DashboardPage = () => {
                 <BuildingOfficeIcon className="w-10 h-10 text-primary-400" />
                 {companyName || session.company_name}
               </h1>
-              <p className="text-dark-300 mt-2">flowCUSTODIAN Configuration Dashboard</p>
+              <p className="text-dark-300 mt-2">launchPAD Configuration Dashboard</p>
             </div>
             {session.status === 'completed' && (
               <div className="flex items-center gap-2 px-4 py-2 bg-green-600/20 rounded-lg border border-green-600/30">

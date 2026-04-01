@@ -24,7 +24,7 @@ const SplashScreen = () => {
           <div className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
         </div>
 
-        <p className="text-dark-400 text-sm">Loading flowCUSTODIAN Wizard...</p>
+        <p className="text-dark-400 text-sm">Loading <span className="text-primary-400">launch<span className="font-bold">PAD</span></span>...</p>
       </div>
     </div>
   );
