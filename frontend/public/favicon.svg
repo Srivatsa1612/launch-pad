@@ -1,11 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <style>
-      .fc-pentagon { fill: #a855f7; }
-    </style>
+    <linearGradient id="tealGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00acc5"/>
+      <stop offset="100%" style="stop-color:#00838f"/>
+    </linearGradient>
   </defs>
-  <!-- Pentagon shape representing flowCUSTODIAN -->
-  <polygon class="fc-pentagon" points="50,10 90,35 75,85 25,85 10,35"/>
-  <!-- Optional: Add a subtle inner design -->
-  <circle cx="50" cy="50" r="20" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.6"/>
+  <!-- M-Theory styled icon -->
+  <circle cx="50" cy="50" r="45" fill="url(#tealGrad)"/>
+  <!-- M letter -->
+  <text x="50" y="65" font-family="Arial, sans-serif" font-size="50" font-weight="bold" fill="white" text-anchor="middle">M</text>
 </svg>
